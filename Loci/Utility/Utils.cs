@@ -81,7 +81,7 @@ public static class Utils
     public unsafe static string ToLociName(Character* chara) => chara->ObjectKind switch
     {
         ObjectKind.Pc => chara->GetNameWithWorld(),
-        ObjectKind.Companion => $"{((Companion*)chara)->Owner->NameString}'s {chara->NameString}",
+        ObjectKind.Companion => $"{((Companion*)chara)->Owner->NameString}s {chara->NameString}",
         _ => string.Empty
     };
 

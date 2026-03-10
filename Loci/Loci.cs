@@ -10,6 +10,7 @@ using Loci.Interop;
 using Loci.Processors;
 using Loci.Services;
 using Loci.Services.Mediator;
+using LociApi.Api;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

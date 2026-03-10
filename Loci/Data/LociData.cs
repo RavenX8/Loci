@@ -1,6 +1,5 @@
 using CkCommons.Helpers;
 using CkCommons.HybridSaver;
-using Loci.Interop;
 using Loci.Services;
 using Loci.Services.Mediator;
 
@@ -127,7 +126,7 @@ public sealed class LociData : IHybridSavable
         _logger.LogDebug($"Modified status {status.Title}.", LoggerType.DataManagement);
         _saver.Save(this);
         _mediator.Publish(new LociStatusChanged(FSChangeType.Modified, status, prevName is not null ? prevName : null));
-        IpcProvider.OnStatusModified(status, false);
+        // IpcProvider.OnStatusModified(status, false);
     }
 
     public void MarkPresetModified(LociPreset preset, string? prevName = null)
@@ -136,7 +135,7 @@ public sealed class LociData : IHybridSavable
         _logger.LogDebug($"Modified preset {preset.Title}.", LoggerType.DataManagement);
         _saver.Save(this);
         _mediator.Publish(new LociPresetChanged(FSChangeType.Modified, preset, prevName is not null ? prevName : null));
-        IpcProvider.OnPresetModified(preset, false);
+        // IpcProvider.OnPresetModified(preset, false);
     }
 
     public void DeleteStatus(LociStatus status)

@@ -33,16 +33,9 @@ public class ActorSM
     // If we should inform the IpcProvider that our SM changed.
     [NonSerialized] internal bool NeedFireEvent = false;
 
+    internal unsafe nint OwnerAddress => (nint)Owner;
     internal unsafe bool OwnerValid => Owner != null;
     internal bool Ephemeral => EphemeralHosts.Count is not 0;
-
-    /// <summary>
-    ///     Determines if a LociSM needs to process itself on the framework tick. <para />
-    ///     <b>A LociSM can reliably be skipped if the following are empty or false:</b><br/>
-    ///     <c>AddTextShown</c>, <c>RemTextShown</c>, <c>Statuses</c>, <c>NeedFireEvent</c>
-    /// </summary>
-    public bool SkipUpdate()
-        => !NeedFireEvent && AddTextShown.Count is 0 && RemTextShown.Count is 0 && Statuses.Count is 0;
 
     public bool LockedByKey(Guid id, uint key)
         => LockedStatuses.TryGetValue(id, out var k) && k == key;

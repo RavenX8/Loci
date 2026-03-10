@@ -2,8 +2,10 @@ using CkCommons;
 using CkCommons.HybridSaver;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using Loci.Services;
 using Loci.Services.Mediator;
+using TerraFX.Interop.Windows;
 
 namespace Loci.Data;
 
@@ -17,7 +19,9 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
     private readonly SaveService _saver;
 
     // Stores the Player dictionaries of ActorSM's.
-    private static Dictionary<string, ActorSM> _managers = [];
+    private Dictionary<string, ActorSM> _managers = [];
+    // Seperate lookup holding the pointer address lookup
+    private Dictionary<nint, ActorSM> _addressLookup = [];
 
     public LociManager(ILogger<LociManager> logger, LociMediator mediator,
         MainConfig config, FileProvider fileNames, SaveService saver)
@@ -42,8 +46,15 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
     // Statically stored manager of the Client for quick data retrieval.
     internal static ActorSM ClientSM = new ActorSM();
 
-    // Static readonlys for fast access by label.
-    internal static IReadOnlyDictionary<string, ActorSM> Managers => _managers;
+    /// <summary>
+    ///   All loaded StatusManagers in the cache, including ones for people not rendered.
+    /// </summary>
+    internal IReadOnlyDictionary<string, ActorSM> Managers => _managers;
+
+    /// <summary>
+    ///   A lookup dictionary holding StatusManagers for all rendered actors.
+    /// </summary>
+    internal IReadOnlyDictionary<nint, ActorSM> Rendered => _addressLookup;
 
     protected override void Dispose(bool disposing)
     {
@@ -59,17 +70,33 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
         InitializeData();
     }
 
-    // This occurs after the player is finished rendering.
+    /// <summary>
+    ///   This occurs after the player is finished rendering.
+    /// </summary>
     private void OnTerritoryChange(ushort prev, ushort next)
     {
         var clientNameWorld = PlayerData.NameWithWorld;
         // Clean up all non-client and non-ephemeral managers.
         foreach (var (name, lociSM) in _managers.ToList())
-            if (name != clientNameWorld && !lociSM.Ephemeral && !lociSM.OwnerValid)
-                _managers.Remove(name);
+        {
+            // If the manager is the clientSM, ignore it
+            if (lociSM == ClientSM)
+                continue;
+            // If ephemeral or have a valid owner, ignore
+            if (lociSM.Ephemeral || lociSM.OwnerValid)
+                continue;
+            // Otherwise, remove the manager
+            _managers.Remove(name);
+            // Dont need to remove the address lookup since the owner isnt valid.
+        }
+
         Mediator.Publish(new FolderUpdateManagers());
     }
 
+    /// <summary>
+    ///   Initializes the data for the player and all currently rendered characters. 
+    ///   Indended to only be called on login.
+    /// </summary>
     private unsafe void InitializeData()
     {
         InitClientSM();
@@ -77,29 +104,65 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
         foreach (var charaAddr in CharaWatcher.Rendered)
         {
             var chara = (Character*)charaAddr;
-            if (chara is null || !chara->IsCharacter())
+            if (chara is null || !chara->IsCharacter() || chara->ObjectKind is not (ObjectKind.Pc or ObjectKind.Companion))
                 continue;
 
+            // Get their Penumbra.GameData object manager name
             var nameKey = Utils.ToLociName(chara);
-            // Assign if existing, otherwise create and assign
-            if (_managers.TryGetValue(nameKey, out var lociSM))
-            {
-                lociSM.Owner = chara;
-                Logger.LogTrace($"Assigned {{{nameKey}}} to their LociSM", LoggerType.Data);
-            }
+
+            // If this name exists in the lookup for a cached manager, mark as visible.
+            if (_managers.TryGetValue(nameKey, out var actorSM))
+                MarkRendered(actorSM, chara);
+            // otherwise, if the nameKey is not empty, create it as new
             else if (!string.IsNullOrEmpty(nameKey))
-            {
-                var newSM = new ActorSM() 
-                {
-                    ActorKind = chara->ObjectKind,
-                    Identifier = nameKey,
-                    Owner = chara
-                };
-                _managers.TryAdd(nameKey, newSM);
-                Logger.LogTrace($"Created and Assigned {{{nameKey}}} to a new LociSM", LoggerType.Data);
-            }
+                AddManager(chara, nameKey);
         }
+        // Update the draw folders
         Mediator.Publish(new FolderUpdateManagers());
+    }
+
+    private unsafe void MarkRendered(ActorSM actorSM, Character* chara, bool isClient = false)
+    {
+        actorSM.Owner = chara;
+        _addressLookup[(nint)chara] = actorSM;
+        Logger.LogTrace($"Updated {{{actorSM.Identifier}}} to Rendered (Visibile) state", LoggerType.Data);
+        if (isClient)
+        {
+            ClientSM = actorSM;
+            ClientSM.Owner = PlayerData.Character;
+        }
+    }
+
+    private unsafe void MarkUnrendered(ActorSM actorSM, Character* chara)
+    {
+        actorSM.Owner = null;
+        _addressLookup.Remove((nint)chara);
+        Logger.LogTrace($"Updated {{{actorSM.Identifier}}} to Unrendered (Invisible) state", LoggerType.Data);
+
+        // If they are not ephemeral and have 0 statuses, we should remove them.
+        if (actorSM != ClientSM && !actorSM.Ephemeral && actorSM.Statuses.Count == 0)
+        {
+            _managers.Remove(actorSM.Identifier);
+            Logger.LogDebug($"Removed {actorSM.Identifier} because it was unrendered with 0 statuses and non-ephemeral", LoggerType.Data);
+        }
+
+        // Fire regardless
+        Mediator.Publish(new FolderUpdateManagers());
+    }
+
+    private unsafe void AddManager(Character* chara, string nameKey, bool isClient = false)
+    {
+        var newSM = new ActorSM()
+        {
+            ActorKind = chara->ObjectKind,
+            Identifier = nameKey,
+            Owner = chara
+        };
+        _managers.TryAdd(nameKey, newSM);
+        _addressLookup[(nint)chara] = newSM;
+        Logger.LogTrace($"Created and Assigned {{{nameKey}}} to a new LociSM", LoggerType.Data);
+        if (isClient)
+            ClientSM = newSM;
     }
 
     private unsafe void InitClientSM()
@@ -107,24 +170,9 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
         var playerName = PlayerData.NameWithWorld;
         // If it exists, we need to ensure sync.
         if (_managers.TryGetValue(playerName, out var existingSM))
-        {
-            Logger.LogDebug($"Found existing status manager for player {playerName}, assigning to ClientSM and syncing data.", LoggerType.Data);
-            ClientSM = existingSM;
-            ClientSM.Owner = PlayerData.Character;
-        }
-        // Otherwise, we need to create a new entry for both.
+            MarkRendered(existingSM, PlayerData.Character, true);
         else
-        {
-            Logger.LogDebug($"No existing client status manager for player {playerName}, creating new one and assigning to ClientSM and StatusManagers.", LoggerType.Data);
-            var manager = new ActorSM()
-            {
-                ActorKind = ObjectKind.Pc,
-                Identifier = playerName,
-                Owner = PlayerData.Character
-            };
-            _managers.TryAdd(playerName, manager);
-            ClientSM = manager;
-        }
+            AddManager(PlayerData.Character, playerName, true);
     }
 
     private unsafe void OnObjectCreated(IntPtr address)
@@ -133,27 +181,19 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
         if (chara is null || chara->ObjectIndex >= 200 || !chara->IsCharacter() || chara->ObjectKind is not (ObjectKind.Pc or ObjectKind.Companion))
             return;
 
+        // Get the name data for the character.
         var nameKey = Utils.ToLociName(chara);
         if (string.IsNullOrEmpty(nameKey))
             return;
 
-        if (_managers.TryGetValue(nameKey, out var lociSM))
-        {
-            lociSM.Owner = chara;
-            Logger.LogTrace($"Assigned {{{nameKey}}} to their LociSM", LoggerType.Data);
-        }
-        else
-        {
-            var newSM = new ActorSM()
-            {
-                ActorKind = chara->ObjectKind,
-                Identifier = nameKey,
-                Owner = PlayerData.Character
-            };
-            _managers.TryAdd(nameKey, newSM);
-            Logger.LogTrace($"Created and Assigned {{{nameKey}}} to a new LociSM", LoggerType.Data);
-            Mediator.Publish(new FolderUpdateManagers());
-        }
+        // If it exists, update it to visible
+        if (_managers.TryGetValue(nameKey, out var existingSM))
+            MarkRendered(existingSM, chara);
+        // Otherwise, create a new manager if the nameKey is valid
+        else if (!string.IsNullOrEmpty(nameKey))
+            AddManager(chara, nameKey);
+
+        Mediator.Publish(new FolderUpdateManagers());
     }
 
     private unsafe void OnObjectDeleted(IntPtr address)
@@ -162,47 +202,14 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
         if (chara is null || chara->ObjectIndex >= 200 || !chara->IsCharacter() || chara->ObjectKind is not (ObjectKind.Pc or ObjectKind.Companion))
             return;
 
+        // Get the namekey, if this was empty, we never had it as a manager, so ignore.
         var nameKey = Utils.ToLociName(chara);
+        if (string.IsNullOrEmpty(nameKey))
+            return;
+
+        // Otherwise, see if it exists, and if it does, we need to remove it.
         if (_managers.TryGetValue(nameKey, out var lociSM))
-        {
-            // We dont want to remove the status manager, but we do want to unassign the owner.
-            if (lociSM.OwnerValid)
-                lociSM.Owner = null;
-
-            // If they are not ephemeral or they have 0 statuses, remove them.
-            if (!lociSM.Ephemeral && lociSM.Statuses.Count is 0)
-            {
-                // Remove if they are not the client.
-                if (lociSM != ClientSM)
-                {
-                    _managers.Remove(nameKey);
-                    Logger.LogDebug($"Removed LociSM for {nameKey} due to 0 statuses and not being ephemeral", LoggerType.Data);
-                    Mediator.Publish(new FolderUpdateManagers());
-                }
-            }
-        }
-    }
-
-    // For registering and unregistering identifiers to existing status managers.
-    public unsafe bool AttachIdToActor(string nameWorld, string identifier)
-    {
-        // Fail if the Client.
-        if (PlayerData.NameWithWorld == nameWorld)
-            return false;
-        // Grab the manager, creating one if not yet present.
-        var sm = GetFromName(nameWorld);
-        // return if we could add it to the manager or not.
-        return sm.EphemeralHosts.Add(identifier);
-    }
-
-    public unsafe bool DetachIdFromActor(string nameWorld, string identifier)
-    {
-        if (PlayerData.NameWithWorld == nameWorld)
-            return false;
-        // Grab the manager, creating one if not yet present.
-        var sm = GetFromName(nameWorld);
-        // return if we could add it to the manager or not.
-        return sm.EphemeralHosts.Remove(identifier);
+            MarkUnrendered(lociSM, chara);
     }
 
     public unsafe static ActorSM GetFromName(string nameKey, bool create = true)

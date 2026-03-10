@@ -16,6 +16,7 @@ public class FileProvider : IConfigFileProvider
     // Configs
     public readonly string MainConfig;
     public readonly string DataConfig;
+    public readonly string EventsConfig;
     public readonly string ManagersConfig;
     public readonly string Favorites;
 
@@ -36,6 +37,7 @@ public class FileProvider : IConfigFileProvider
         // Configs.
         MainConfig = Path.Combine(Directory, "config.json");
         DataConfig = Path.Combine(Directory, "lociData.json");
+        EventsConfig = Path.Combine(Directory, "lociEvents.json");
         ManagersConfig = Path.Combine(Directory, "managers.json");
         Favorites = Path.Combine(Directory, "favorites.json");
     }

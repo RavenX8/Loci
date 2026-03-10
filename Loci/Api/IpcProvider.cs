@@ -1,12 +1,199 @@
 using CkCommons;
 using Dalamud.Plugin.Ipc;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using Loci.Data;
 using Loci.Services;
 using Loci.Services.Mediator;
+using LociApi;
+using LociApi.Api;
+using LociApi.Enums;
 using Microsoft.Extensions.Hosting;
+using System.Runtime.CompilerServices;
+using TerraFX.Interop.Windows;
 
-namespace Loci.Interop;
+namespace Loci.Api;
+
+public class LociApi : DisposableMediatorSubscriberBase, ILociApi
+{
+    private readonly MainConfig _config;
+    private readonly RegistryApi _registry;
+    private readonly StatusManagerApi _statusManagers;
+    private readonly StatusApi _statuses;
+    private readonly PresetApi _presets;
+    private readonly EventApi _events;
+
+    // Our API Version, exposed to other plugins for compatibility checking.
+    public const int VERSION_MAJOR = 1;
+    public const int VERSION_MINOR = 0;
+
+    public LociApi(
+        ILogger<LociApi> logger,
+        LociMediator mediator,
+        MainConfig config,
+        RegistryApi registry,
+        StatusManagerApi statusManagers,
+        StatusApi statuses,
+        PresetApi presets,
+        EventApi events) : base(logger, mediator)
+    {
+        _config = config;
+        _registry = registry;
+        _statusManagers = statusManagers;
+        _statuses = statuses;
+        _presets = presets;
+        _events = events;
+        // Invoke our action whenever this is fired.
+        Mediator.Subscribe<EnabledStateChanged>(this, _ => EnabledStateChanged?.Invoke(_.NewState));
+    }
+
+    // ApiBase
+    public (int Major, int Minor) ApiVersion => (VERSION_MAJOR, VERSION_MINOR);
+    public bool IsEnabled => _config.Current.Enabled;
+    public event Action<bool>? EnabledStateChanged;
+
+    // Plugin API Components
+    public ILociApiRegistry Registry => _registry;
+    public ILociApiStatusManager StatusManager => _statusManagers;
+    public ILociApiStatuses Statuses => _statuses;
+    public ILociApiPresets Presets => _presets;
+    public ILociApiEvents Events => _events;
+}
+
+public class RegistryApi(ApiHelpers helpers, LociManager manager) : ILociApiRegistry
+{
+    public LociApiEc RegisterByPtr(nint address, string hostLabel)
+    {
+        if (!CharaWatcher.Rendered.Contains(address))
+            return LociApiEc.TargetInvalid;
+
+        // Fail if not found in an existing manager
+        if (!manager.Rendered.TryGetValue(address, out var actorSM))
+            return LociApiEc.TargetNotFound;
+
+        var res = helpers.AddEphemeralHost(actorSM, hostLabel);
+        // Fire here to prevent circular call loop where a listener re-registers from its own call.
+        if (res is LociApiEc.Success && actorSM.OwnerValid)
+            ActorHostsChanged?.Invoke(actorSM.OwnerAddress, hostLabel);
+
+        return res;
+    }
+
+    public LociApiEc RegisterByName(string charaName, string buddyName, string hostLabel)
+    {
+        var name = helpers.ToLociName(charaName, buddyName);
+        // Fail if not an existing manager, but still allow regardless of visibility
+        if (!manager.Managers.TryGetValue(name, out var actorSM))
+            return LociApiEc.TargetNotFound;
+
+        var res = helpers.AddEphemeralHost(actorSM, hostLabel);
+        // Fire here to prevent circular call loop where a listener re-registers from its own call.
+        if (res is LociApiEc.Success && actorSM.OwnerValid)
+            ActorHostsChanged?.Invoke(actorSM.OwnerAddress, hostLabel);
+
+        return res;
+    }
+
+    public LociApiEc UnregisterByPtr(nint address, string hostLabel)
+    {
+        if (!CharaWatcher.Rendered.Contains(address))
+            return LociApiEc.TargetInvalid;
+
+        // Fail if not found in an existing manager
+        if (!manager.Rendered.TryGetValue(address, out var actorSM))
+            return LociApiEc.TargetNotFound;
+
+        var res = helpers.RemoveEphemeralHost(actorSM, hostLabel);
+        // Fire here to prevent circular call loop where a listener re-registers from its own call.
+        if (res is LociApiEc.Success && actorSM.OwnerValid)
+            ActorHostsChanged?.Invoke(actorSM.OwnerAddress, hostLabel);
+
+        return res;
+    }
+
+    public LociApiEc UnregisterByName(string charaName, string buddyName, string hostLabel)
+    {
+        var name = helpers.ToLociName(charaName, buddyName);
+        // Fail if not an existing manager, but still allow regardless of visibility
+        if (!manager.Managers.TryGetValue(name, out var actorSM))
+            return LociApiEc.TargetNotFound;
+
+        var res = helpers.RemoveEphemeralHost(actorSM, hostLabel);
+        // Fire here to prevent circular call loop where a listener re-registers from its own call.
+        if (res is LociApiEc.Success && actorSM.OwnerValid)
+            ActorHostsChanged?.Invoke(actorSM.OwnerAddress, hostLabel);
+
+        return res;
+    }
+
+    // Quick one-line solution to iterated removal of a defined host label
+    public int UnregisterAll(string hostLabel)
+        => manager.Managers.Values.Sum(sm => sm.EphemeralHosts.Remove(hostLabel) ? 1 : 0);
+
+    public List<string> GetHostsByPtr(nint address)
+        => manager.Rendered.TryGetValue(address, out var actorSM) ? actorSM.EphemeralHosts.ToList() : [];
+
+    public List<string> GetHostsByName(string charaName, string buddyName)
+    {
+        var name = helpers.ToLociName(charaName, buddyName);
+        return manager.Managers.TryGetValue(name, out var actorSM) ? actorSM.EphemeralHosts.ToList() : [];
+    }
+
+    public int GetHostActorCount(string hostLabel)
+        => manager.Managers.Values.Count(sm => sm.EphemeralHosts.Contains(hostLabel));
+
+
+    public event Action<nint, string>? ActorHostsChanged;
+}
+
+public class StatusManagerApi(ApiHelpers helpers, LociManager manager) : ILociApiStatusManager
+{
+
+}
+
+public class StatusApi(ApiHelpers helpers, LociManager manager, LociData data) : ILociApiStatuses
+{
+
+}
+
+public class PresetApi(ApiHelpers helpers, LociManager manager, LociData data) : ILociApiPresets
+{
+
+}
+
+public class EventApi(ApiHelpers helpers, LociManager manager, LociData data) : ILociApiEvents
+{
+
+}
+
+// Commonly shared helper logic.
+public class ApiHelpers(LociManager manager)
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public string ToLociName(string charaName, string buddyName)
+        => buddyName.Length > 0 ? $"{charaName}s {buddyName}" : charaName;
+
+    public LociApiEc AddEphemeralHost(ActorSM sm, string identifier)
+    {
+        if (LociManager.ClientSM == sm)
+            return LociApiEc.ClientForbidden;
+
+        return sm.EphemeralHosts.Add(identifier) ? LociApiEc.Success : LociApiEc.NoChange;
+    }
+
+    public LociApiEc RemoveEphemeralHost(ActorSM sm, string identifier)
+    {
+        if (LociManager.ClientSM == sm)
+            return LociApiEc.ClientForbidden;
+
+        var removed = sm.EphemeralHosts.Remove(identifier);
+
+        if (removed && sm.OwnerValid)
+            RegistryApi.OnActorHostsChanged(sm.OwnerAddress, identifier);
+
+        return removed ? LociApiEc.Success : LociApiEc.NoChange;
+    }
+}
 
 /// <summary>
 ///     The IPC Provider for Loci to interact with other plugins <para />
@@ -14,7 +201,8 @@ namespace Loci.Interop;
 /// </summary>
 public class IpcProvider : DisposableMediatorSubscriberBase, IHostedService
 {
-    private const int LociApiVersion = 2;
+    private const int ApiVersionMajor = 1;
+    private const int ApiVersionMinor = 0;
 
     private readonly LociManager _manager;
     private readonly CharaWatcher _watcher;
@@ -213,7 +401,7 @@ public class IpcProvider : DisposableMediatorSubscriberBase, IHostedService
         Ready = Svc.PluginInterface.GetIpcProvider<object>("Loci.Ready");
         Disposing = Svc.PluginInterface.GetIpcProvider<object>("Loci.Disposing");
         // Configure Funcs and Actions
-        ApiVersion.RegisterFunc(() => LociApiVersion);
+        ApiVersion.RegisterFunc(() => ApiVersionMajor);
 
         // Events triggered by Loci.
         OnManagerModified = Svc.PluginInterface.GetIpcProvider<nint, object>("Loci.OnManagerModified");

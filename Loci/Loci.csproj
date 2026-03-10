@@ -15,7 +15,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <NoWarn>$(NoWarn);IDE1006,CS8618,MSB3270</NoWarn>
     </PropertyGroup>
-           
+
     <ItemGroup>
 	   <!--For PInvoke replacement-->
 	   <Reference Include="TerraFX.Interop.Windows" Private="false" />
@@ -23,7 +23,6 @@
 	   <ProjectReference Include="..\Submodules\CkCommons\CkCommons.csproj" />
 	   <ProjectReference Include="..\Submodules\LociAPI\Loci.Api.csproj" />
 	   <ProjectReference Include="..\Submodules\OtterGui\OtterGui.csproj" />
-	    
         <!--For SignalR server connectivity, helpful for server connectivity processing-->
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="10.0.1" />
@@ -44,10 +43,6 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Api\" />
-	</ItemGroup>
 </Project>
 
 

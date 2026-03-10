@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11408.102 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loci", "Loci\Loci.csproj", "{513CB49C-FE96-4576-9939-291433581990}"
 EndProject
@@ -69,8 +69,23 @@ Global
 		{2201D25B-54DA-4D7A-ABE7-B099CF0274DB}.Release|x64.Build.0 = Release|x64
 		{2201D25B-54DA-4D7A-ABE7-B099CF0274DB}.Release|x86.ActiveCfg = Release|x64
 		{2201D25B-54DA-4D7A-ABE7-B099CF0274DB}.Release|x86.Build.0 = Release|x64
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Debug|x64.Build.0 = Debug|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Debug|x86.Build.0 = Debug|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Release|x64.ActiveCfg = Release|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Release|x64.Build.0 = Release|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Release|x86.ActiveCfg = Release|Any CPU
+		{74AD1543-B425-4AED-AC83-E83224A06384}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {37D4407B-0811-4EDD-8AF4-8061858E2B8F}
 	EndGlobalSection
 EndGlobal
