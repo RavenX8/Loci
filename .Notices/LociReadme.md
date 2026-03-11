@@ -1,6 +1,6 @@
 ﻿# NOTICE:
-The Loci segment of Sundouleia is derrived from Moodles, licensed under:
 ***This project is not affiliated with, endorsed, or supported by Moodles.***
+Loci is derrived from Moodles, licensed under:
 ```
 BSD 3-Clause License
 Copyright (c) 2024, Kane Valentine
@@ -34,19 +34,5 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Loci provides **public API endpoints** and extends existing functionality.  
 Its goal is to offer accessible control over custom statuses owned by the client, and other users.  
 
-Key features include:  
-- Lock/unlock client statuses  
-- Register/unregister monitored actors for identified status management
-- Apply statuses/presets by **Tuple** and **ID**
-- Can be used/interfaced with **without a Sundouleia account / connection**, allowing any plugin to use it as an IPC endpoint
-
-Originally designed as a placeholder, Loci now has grown to expose several new IPC endpoints, its own locking system, and polished target application system.  
+Loci now has grown to expose several new IPC endpoints, its own locking system, and polished target application system.  
 > There is no exclusivity with Loci — it is designed for those who want full control over custom statuses.
-
-## Summary
-Loci is a safe, transformative, derivative work with optimized functionality and additional features:  
-- **50+ IPC endpoints** for external plugin use  
-- Inclusive Target Application system  
-- Inclusive custom status locking system (safely clears locks on shutdown)  
-- Detailed ImGui supported display of color formatted statuses and descriptions
-- Planned integrate for Minion/Pet status support
