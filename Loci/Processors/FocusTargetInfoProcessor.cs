@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Loci.Data;
+using LociApi.Enums;
 
 namespace Loci.Processors;
 public unsafe class FocusTargetInfoProcessor

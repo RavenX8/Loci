@@ -8,9 +8,9 @@ namespace Loci.Data;
 /// <summary>
 ///     Holds all data relative to events, presets, and events within Loci.
 /// </summary>
-public sealed class LociEvents : IHybridSavable
+public sealed class LociEventData : IHybridSavable
 {
-    private readonly ILogger<LociEvents> _logger;
+    private readonly ILogger<LociEventData> _logger;
     private readonly LociMediator _mediator;
     private readonly FileProvider _fileNames;
     private readonly SaveService _saver;
@@ -18,7 +18,7 @@ public sealed class LociEvents : IHybridSavable
     // maybe make these static, not sure yet.
     private static List<LociEvent> _events = [];
 
-    public LociEvents(ILogger<LociEvents> logger, LociMediator mediator,
+    public LociEventData(ILogger<LociEventData> logger, LociMediator mediator,
         FileProvider fileNames, SaveService saver)
     {
         _logger = logger;

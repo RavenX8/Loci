@@ -39,7 +39,7 @@ public class SettingsTab
         {
             _config.Current.Enabled = enabled;
             _config.Save();
-            _mediator.Publish(new EnabledStateChanged(enabled));
+            _mediator.Publish(new NewEnabledStateMessage(enabled));
         }
         DrawIndentedEnables();
 

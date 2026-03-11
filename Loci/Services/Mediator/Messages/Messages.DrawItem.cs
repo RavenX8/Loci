@@ -7,9 +7,10 @@ public record FolderUpdateManagers : MessageBase;
 
 // CKFS
 public enum FSChangeType { Created, Deleted, Renamed, Modified }
+public enum LociModule { Statuses, Presets, Events }
 
 public record LociStatusChanged(FSChangeType Type, LociStatus Item, string? OldString = null) : MessageBase;
 public record LociPresetChanged(FSChangeType Type, LociPreset Item, string? OldString = null) : MessageBase;
 public record LociEventChanged(FSChangeType Type, LociEvent Item, string? OldString = null) : MessageBase;
 // Can add events here later.
-public record ReloadCKFS(bool IsPresetFS) : MessageBase;
+public record ReloadCKFS(LociModule Module) : MessageBase;

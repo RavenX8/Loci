@@ -1,5 +1,3 @@
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
-
 namespace Loci.Services.Mediator;
 
 /// <summary>
@@ -17,8 +15,3 @@ public record WatchedObjectCreated(IntPtr Address) : SameThreadMessage;
 ///     Whenever a watched object is destroyed or unloaded.
 /// </summary>
 public record WatchedObjectDestroyed(IntPtr Address) : SameThreadMessage;
-
-
-// Based on state
-public record EnabledStateChanged(bool NewState) : MessageBase;
-public record StatusManagerChanged(IntPtr Address, ObjectKind Kind) : SameThreadMessage; // Could user over actions if we wanted.

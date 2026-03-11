@@ -2,6 +2,7 @@ using CkCommons.Helpers;
 using CkCommons.HybridSaver;
 using Loci.Services;
 using Loci.Services.Mediator;
+using LociApi.Enums;
 
 namespace Loci.Data;
 
@@ -174,7 +175,7 @@ public sealed class LociData : IHybridSavable
                 var status = new LociStatus
                 {
                     GUID = statusObj["GUID"]?.ToObject<Guid>() ?? throw new Bagagwa("Status missing GUID"),
-                    IconID = statusObj["IconID"]?.ToObject<int>() ?? 0,
+                    IconID = statusObj["IconID"]?.ToObject<uint>() ?? 0,
                     Title = statusObj["Title"]?.ToObject<string>() ?? "",
                     Description = statusObj["Description"]?.ToObject<string>() ?? "",
                     CustomFXPath = statusObj["CustomFXPath"]?.ToObject<string>() ?? "",
@@ -200,7 +201,6 @@ public sealed class LociData : IHybridSavable
                 if (Statuses.Any(s => s.GUID == status.GUID))
                     continue;
                 // Ensure unique title.
-                status.Title = RegexEx.EnsureUniqueName(status.Title, Statuses, s => s.Title);
                 _statuses.Add(status);
             }
             catch
@@ -231,7 +231,6 @@ public sealed class LociData : IHybridSavable
                 if (Presets.Any(p => p.GUID == preset.GUID))
                     continue;
                 // Ensure unique title.
-                preset.Title = RegexEx.EnsureUniqueName(preset.Title, Presets, s => s.Title);
                 _presets.Add(preset);
             }
             catch

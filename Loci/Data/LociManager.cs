@@ -2,10 +2,8 @@ using CkCommons;
 using CkCommons.HybridSaver;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using Loci.Services;
 using Loci.Services.Mediator;
-using TerraFX.Interop.Windows;
 
 namespace Loci.Data;
 
@@ -19,9 +17,9 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
     private readonly SaveService _saver;
 
     // Stores the Player dictionaries of ActorSM's.
-    private Dictionary<string, ActorSM> _managers = [];
+    private static Dictionary<string, ActorSM> _managers = [];
     // Seperate lookup holding the pointer address lookup
-    private Dictionary<nint, ActorSM> _addressLookup = [];
+    private static Dictionary<nint, ActorSM> _addressLookup = [];
 
     public LociManager(ILogger<LociManager> logger, LociMediator mediator,
         MainConfig config, FileProvider fileNames, SaveService saver)
@@ -46,15 +44,17 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
     // Statically stored manager of the Client for quick data retrieval.
     internal static ActorSM ClientSM = new ActorSM();
 
+    // Move the below to non-static when possible and reallocate the LociProcess.cs data into a service or cache so it can be handled better.
+
     /// <summary>
     ///   All loaded StatusManagers in the cache, including ones for people not rendered.
     /// </summary>
-    internal IReadOnlyDictionary<string, ActorSM> Managers => _managers;
+    internal static IReadOnlyDictionary<string, ActorSM> Managers => _managers;
 
     /// <summary>
     ///   A lookup dictionary holding StatusManagers for all rendered actors.
     /// </summary>
-    internal IReadOnlyDictionary<nint, ActorSM> Rendered => _addressLookup;
+    internal static IReadOnlyDictionary<nint, ActorSM> Rendered => _addressLookup;
 
     protected override void Dispose(bool disposing)
     {

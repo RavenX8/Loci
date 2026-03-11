@@ -5,102 +5,100 @@ using CkCommons.Textures;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin.Ipc;
 using Loci.Data;
-using Loci.Interop;
-using Loci.Services.Mediator;
+using LociApi.Helpers;
+using LociApi.Ipc;
 using OtterGui.Text;
 
 namespace Loci.Gui;
 
-public class IpcTesterTab
+public class IpcTesterTab : IDisposable
 {
-    private readonly ILogger<IpcTesterTab> _logger;
-    private readonly LociMediator _mediator;
-    private readonly IpcProvider _ipc;
-    private readonly LociManager _manager;
-    private readonly IpcTesterRegistration _testerRegistration;
-    private readonly IpcTesterStatusManagers _testerManagers;
-    private readonly IpcTesterStatuses _testerStatuses;
-    private readonly IpcTesterPresets _testerPresets;
-
-    // Common calls.
-    private static ICallGateSubscriber<int> _apiVersion;
-    private static ICallGateSubscriber<nint, string, LociStatusInfo, object> _onTargetApplyStatus;
-    private static ICallGateSubscriber<nint, string, List<LociStatusInfo>, object> _onTargetApplyStatuses;
-
-    public IpcTesterTab(ILogger<IpcTesterTab> logger, LociMediator mediator,
-        IpcProvider ipc, LociManager manager, IpcTesterRegistration testerRegistration, 
-        IpcTesterStatusManagers testerManagers, IpcTesterStatuses testerStatuses, 
-        IpcTesterPresets testerPresets)
-    {
-        _logger = logger;
-        _mediator = mediator;
-        _ipc = ipc;
-        _manager = manager;
-        _testerRegistration = testerRegistration;
-        _testerManagers = testerManagers;
-        _testerStatuses = testerStatuses;
-        _testerPresets = testerPresets;
-
-        _apiVersion = Svc.PluginInterface.GetIpcSubscriber<int>("Loci.GetApiVersion");
-        _onTargetApplyStatus = Svc.PluginInterface.GetIpcSubscriber<nint, string, LociStatusInfo, object>("Loci.OnTargetApplyStatus");
-        _onTargetApplyStatuses = Svc.PluginInterface.GetIpcSubscriber<nint, string, List<LociStatusInfo>, object>("Loci.OnTargetApplyStatuses");
-    }
+    private readonly IpcTesterRegistration _registration;
+    private readonly IpcTesterStatusManagers _managers;
+    private readonly IpcTesterStatuses _statuses;
+    private readonly IpcTesterPresets _presets;
+    private readonly IpcTesterEvents _events;
 
     private bool _subscribed = false;
-    private (nint Addr, string RequestedHost, LociStatusInfo Data) _lastSingleRequest = (nint.Zero, string.Empty, default);
-    private (nint Addr, string RequestedHost, List<LociStatusInfo> Data) _lastBulkRequest = (nint.Zero, string.Empty, []);
+    private (nint Addr, string Host, List<LociStatusInfo> Data) _latestApply;
+
+    private readonly EventSubscriber<nint, string, List<LociStatusInfo>> _applyToTarget;
+
+    public IpcTesterTab(IpcTesterRegistration registration, IpcTesterStatusManagers managers,
+        IpcTesterStatuses statuses, IpcTesterPresets presets, IpcTesterEvents events)
+    {
+        _registration = registration;
+        _managers = managers;
+        _statuses = statuses;
+        _presets = presets;
+        _events = events;
+
+        _applyToTarget = ApplyToTargetSent.Subscriber(Svc.PluginInterface, OnApplyToTarget);
+    }
+
+    public void Dispose()
+    {
+        _applyToTarget.Dispose();
+    }
+
+    private void OnApplyToTarget(nint targetPtr, string tag, List<LociStatusInfo> statuses)
+        => _latestApply = (targetPtr, tag, statuses);
+
 
     private void SubscribeToIpc()
     {
-        _onTargetApplyStatus.Subscribe(OnApplyStatusRequest);
-        _onTargetApplyStatuses.Subscribe(OnApplyStatusesRequest);
-        _testerRegistration.Subscribe();
-        _testerManagers.Subscribe();
-        _testerStatuses.Subscribe();
-        _testerPresets.Subscribe();
+        _registration.Subscribe();
+        _managers.Subscribe();
+        _statuses.Subscribe();
+        _presets.Subscribe();
+        _events.Subscribe();
         _subscribed = true;
     }
 
     private void UnsubscribeFromIpc()
     {
-        _onTargetApplyStatus.Unsubscribe(OnApplyStatusRequest);
-        _onTargetApplyStatuses.Unsubscribe(OnApplyStatusesRequest);
-        _testerRegistration.Unsubscribe();
-        _testerManagers.Unsubscribe();
-        _testerStatuses.Unsubscribe();
-        _testerPresets.Unsubscribe();
+        _registration.Unsubscribe();
+        _managers.Unsubscribe();
+        _statuses.Unsubscribe();
+        _presets.Unsubscribe();
+        _events.Unsubscribe();
         _subscribed = false;
     }
-
-    private void OnApplyStatusRequest(nint targetPtr, string tag, LociStatusInfo status)
-        => _lastSingleRequest = (targetPtr, tag, status);
-
-    private void OnApplyStatusesRequest(nint targetPtr, string tag, List<LociStatusInfo> statuses)
-        => _lastBulkRequest = (targetPtr, tag, statuses);
 
     public void DrawSection()
     {
         if (CkGui.IconTextButton(FAI.Plug, "Subscribe to IPC", disabled: _subscribed))
             SubscribeToIpc();
+        CkGui.AttachToolTip("THIS IS FOR TESTING PURPOSES ONLY IN THE IPC TESTER TAB." +
+            "--SEP--LociIpc is already currently active and running!");
         ImGui.SameLine();
         if (CkGui.IconTextButton(FAI.PowerOff, "Unsubscribe from IPC", disabled: !_subscribed))
             UnsubscribeFromIpc();
+        CkGui.AttachToolTip("THIS IS FOR TESTING PURPOSES ONLY IN THE IPC TESTER TAB." +
+            "--SEP--LociIpc is already currently active and running!");
 
         ImGui.Separator();
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ScrollbarSize, 10f);
         using var _ = ImRaii.Child("ipc-contents", ImGui.GetContentRegionAvail());
         ImGui.Text("Version");
-        CkGui.ColorTextInline($"{_apiVersion.InvokeFunc()}", ImGuiColors.DalamudYellow);
+        var (major, minor) = new ApiVersion(Svc.PluginInterface).Invoke();
+        CkGui.ColorTextInline($"({major}.{minor})", ImGuiColors.DalamudYellow);
+
+        CkGui.FrameSeparatorV();
+        ImGui.Text("Enabled?:");
+        var isEnabled = new IsEnabled(Svc.PluginInterface).Invoke();
+        CkGui.BoolIcon(isEnabled);
+
         LatestTargetApply();
-        LatestTargetApplyBulk();
 
-        _testerRegistration.Draw();
-        _testerManagers.Draw();
-        _testerStatuses.Draw();
-        _testerPresets.Draw();
+        _registration.Draw();
+        _managers.Draw();
+        _statuses.Draw();
+        _presets.Draw();
+        _events.Draw();
 
+        ImGui.Separator();
         if (ImGui.CollapsingHeader("Status Managers"))
         {
             foreach (var (name, manager) in LociManager.Managers)
@@ -110,28 +108,8 @@ public class IpcTesterTab
 
     private void LatestTargetApply()
     {
-        ImGui.Text("Last ApplyStatus:");
-        if (_lastSingleRequest.Addr == nint.Zero)
-        {
-            CkGui.ColorTextInline("None requested...", CkCol.TriStateCross.Uint());
-            return;
-        }
-
-        using var ident = ImRaii.PushIndent();
-        ImGui.Text("Address:");
-        CkGui.ColorTextInline($"{_lastSingleRequest.Addr:X}", ImGuiColors.DalamudViolet);
-        ImGui.Text("TargetHost:");
-        CkGui.ColorTextInline(_lastSingleRequest.RequestedHost, ImGuiColors.DalamudViolet);
-        CkGui.TextFrameAligned("Status Info:");
-        ImGui.SameLine();
-        LociIcon.Draw((uint)_lastSingleRequest.Data.IconID, _lastSingleRequest.Data.Stacks, LociIcon.SizeFramed);
-        Utils.AttachTooltip(_lastSingleRequest.Data, [], []);
-    }
-
-    private void LatestTargetApplyBulk()
-    {
         ImGui.Text("Last ApplyStatuses:");
-        if (_lastBulkRequest.Addr == nint.Zero)
+        if (_latestApply.Addr == nint.Zero)
         {
             CkGui.ColorTextInline("None requested...", CkCol.TriStateCross.Uint());
             return;
@@ -139,22 +117,22 @@ public class IpcTesterTab
 
         using var ident = ImRaii.PushIndent();
         ImGui.Text("Address:");
-        CkGui.ColorTextInline($"{_lastBulkRequest.Addr:X}", ImGuiColors.DalamudViolet);
+        CkGui.ColorTextInline($"{_latestApply.Addr:X}", ImGuiColors.DalamudViolet);
         ImGui.Text("TargetHost:");
-        CkGui.ColorTextInline(_lastBulkRequest.RequestedHost, ImGuiColors.DalamudViolet);
+        CkGui.ColorTextInline(_latestApply.Host, ImGuiColors.DalamudViolet);
         CkGui.TextFrameAligned("Status Info:");
         ImGui.SameLine();
         using var iconGroup = ImRaii.Group();
 
-        for (var i = 0; i < _lastBulkRequest.Data.Count; i++)
+        for (var i = 0; i < _latestApply.Data.Count; i++)
         {
-            if (_lastBulkRequest.Data[i].IconID is 0)
+            if (_latestApply.Data[i].IconID is 0)
                 continue;
 
-            LociIcon.Draw((uint)_lastBulkRequest.Data[i].IconID, _lastBulkRequest.Data[i].Stacks, LociIcon.SizeFramed);
-            Utils.AttachTooltip(_lastBulkRequest.Data[i], _lastBulkRequest.Data, []);
+            LociIcon.Draw(_latestApply.Data[i].IconID, _latestApply.Data[i].Stacks, LociIcon.SizeFramed);
+            Utils.AttachTooltip(_latestApply.Data[i], _latestApply.Data, []);
 
-            if (i < _lastBulkRequest.Data.Count)
+            if (i < _latestApply.Data.Count)
                 ImUtf8.SameLineInner();
         }
     }

@@ -13,7 +13,7 @@ public partial class LociEvent
     // Essential
     public const int Version = 1;
     public Guid GUID = Guid.NewGuid();
-    bool Enabled = false;
+    public bool Enabled = false;
     public string Title = string.Empty;
     public string Description = string.Empty;
     public LociEventType EventType;

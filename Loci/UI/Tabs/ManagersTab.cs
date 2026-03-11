@@ -9,7 +9,6 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Loci.Data;
 using Loci.DrawSystem;
-using Loci.Interop;
 using Loci.Services;
 using Loci.Services.Mediator;
 using OtterGui.Extensions;
@@ -21,16 +20,14 @@ public class ManagersTab
 {
     private readonly ILogger<ManagersTab> _logger;
     private readonly LociMediator _mediator;
-    private readonly IpcProvider _ipc;
     private readonly LociManager _manager;
     private readonly SMDrawer _drawer;
     
     public ManagersTab(ILogger<ManagersTab> logger, LociMediator mediator,
-        IpcProvider ipc, LociManager manager, SMDrawer drawer)
+        LociManager manager, SMDrawer drawer)
     {
         _logger = logger;
         _mediator = mediator;
-        _ipc = ipc;
         _manager = manager;
         _drawer = drawer;
     }

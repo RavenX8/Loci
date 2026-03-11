@@ -15,6 +15,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Loci.Data;
 using Loci.Services;
+using LociApi.Enums;
 using Lumina.Excel;
 using Lumina.Extensions;
 using MemoryPack;
@@ -70,14 +71,6 @@ public static class Utils
         return System.Text.Json.JsonSerializer.Deserialize<T>(System.Text.Json.JsonSerializer.Serialize(obj))!;
     }
 
-    //public unsafe static string ToLociName(this Character chara) => chara.ObjectKind switch
-    //{
-        
-    //    ObjectKind.Pc => chara.GetNameWithWorld(),
-    //    ObjectKind.Companion => $"{chara.CompanionData.OwnerObject->NameString}'s {chara.NameString}",
-    //    _ => string.Empty
-    //};
-
     public unsafe static string ToLociName(Character* chara) => chara->ObjectKind switch
     {
         ObjectKind.Pc => chara->GetNameWithWorld(),
@@ -99,6 +92,59 @@ public static class Utils
         status.ExpiresAt = status.NoExpire ? long.MaxValue : Time + status.TotalMilliseconds;
         return status;
     }
+
+    public static LociStatus ToSavedStatus(this LociStatusInfo statusInfo)
+    {
+        var totalTime = statusInfo.ExpireTicks == -1 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(statusInfo.ExpireTicks);
+        return new LociStatus
+        {
+            GUID = statusInfo.GUID,
+            IconID = statusInfo.IconID,
+            Title = statusInfo.Title,
+            Description = statusInfo.Description,
+            CustomFXPath = statusInfo.CustomVFXPath,
+
+            Type = statusInfo.Type,
+            Stacks = statusInfo.Stacks,
+            StackSteps = statusInfo.StackSteps,
+            StackToChain = statusInfo.StackToChain,
+            Modifiers = (Modifiers)statusInfo.Modifiers,
+
+            ChainedGUID = statusInfo.ChainedGUID,
+            ChainedType = statusInfo.ChainType,
+            ChainTrigger = statusInfo.ChainTrigger,
+
+            Applier = statusInfo.Applier,
+            Dispeller = statusInfo.Dispeller,
+
+            // Additional variables we can run assumptions on.
+            Days = totalTime.Days,
+            Hours = totalTime.Hours,
+            Minutes = totalTime.Minutes,
+            Seconds = totalTime.Seconds,
+            NoExpire = statusInfo.ExpireTicks == -1,
+        };
+    }
+
+    public static LociPreset ToSavedPreset(this LociPresetInfo presetInfo)
+        => new LociPreset
+        {
+            GUID = presetInfo.GUID,
+            Title = presetInfo.Title,
+            Description = presetInfo.Description,
+            Statuses = presetInfo.Statuses,
+            ApplyType = (PresetApplyType)presetInfo.ApplicationType
+        };
+
+    public static LociEvent ToSavedEvent(this LociEventInfo eventInfo)
+        => new LociEvent
+        {
+            GUID = eventInfo.GUID,
+            Enabled = eventInfo.Enabled,
+            Title = eventInfo.Title,
+            Description = eventInfo.Description,
+            EventType = eventInfo.EventType
+        };
 
     public unsafe static List<string> GetFriendlist()
     {

@@ -13,7 +13,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Loci.Combos;
 using Loci.Data;
 using Loci.DrawSystem;
-using Loci.Interop;
 using Loci.Services;
 using OtterGui.Extensions;
 using OtterGui.Text;

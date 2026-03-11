@@ -7,8 +7,8 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Loci.Data;
-using Loci.Interop;
 using Loci.Services.Mediator;
+using LociApi.Enums;
 using Lumina.Excel.Sheets;
 using Microsoft.Extensions.Hosting;
 using System.Buffers.Binary;
@@ -52,7 +52,7 @@ public class LociProcessor : DisposableMediatorSubscriberBase, IHostedService
         _flyText = flyPopupText;
         _manager = manager;
 
-        Mediator.Subscribe<EnabledStateChanged>(this, _ => 
+        Mediator.Subscribe<NewEnabledStateMessage>(this, _ => 
         {
             unsafe
             {

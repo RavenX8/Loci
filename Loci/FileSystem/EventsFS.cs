@@ -11,41 +11,31 @@ using System.Text.RegularExpressions;
 namespace Loci.DrawSystem;
 
 // Use this temporarily until we can find a better way to integrate into DDS.
-public sealed class PresetsFS : CkFileSystem<LociPreset>, IMediatorSubscriber, IHybridSavable, IDisposable
+public sealed class LociEventsFS : CkFileSystem<LociEvent>, IMediatorSubscriber, IHybridSavable, IDisposable
 {
-    private readonly ILogger<PresetsFS> _logger;
-    private readonly LociManager _manager;
+    private readonly ILogger<LociEventsFS> _logger;
+    private readonly LociEventData _data;
     private readonly SaveService _hybridSaver;
     public LociMediator Mediator { get; init; }
-    public PresetsFS(ILogger<PresetsFS> logger, LociMediator mediator,
-        LociManager manager, SaveService saver)
+    public LociEventsFS(ILogger<LociEventsFS> logger, LociMediator mediator, LociEventData data, SaveService saver)
     {
         _logger = logger;
         Mediator = mediator;
-        _manager = manager;
+        _data = data;
         _hybridSaver = saver;
 
-        Mediator.Subscribe<LociPresetChanged>(this, _ => OnPresetChange(_.Type, _.Item, _.OldString));
-        Mediator.Subscribe<ReloadCKFS>(this, _ => { if (_.Module is LociModule.Presets) Reload(); });
+        Mediator.Subscribe<LociEventChanged>(this, _ => OnLociEventChange(_.Type, _.Item, _.OldString));
+        Mediator.Subscribe<ReloadCKFS>(this, _ => { if (_.Module is LociModule.Events) Reload(); });
         Changed += OnChange;
         Reload();
     }
 
     private void Reload()
     {
-        if (Load(new FileInfo(_hybridSaver.FileNames.CKFS_Presets), LociData.Presets, PresetToIdentifier, PresetToName))
+        if (Load(new FileInfo(_hybridSaver.FileNames.CKFS_Events), LociEventData.Events, LociEventToIdentifier, LociEventToName))
             _hybridSaver.Save(this);
 
-        _logger.LogDebug($"Reloaded CKFS with {LociData.Presets.Count} preset.");
-    }
-
-    public void MergeWithMigratableFile(string migratablePath)
-    {
-        var basePath = new FileInfo(_hybridSaver.FileNames.CKFS_Presets);
-        var migratableFile = new FileInfo(migratablePath);
-        MigrateAndReloadFsFile(migratableFile, basePath, LociData.Presets, PresetToIdentifier, PresetToName);
-        _logger.LogInformation($"Migrated presets from {migratableFile.FullName} to {basePath.FullName}.");
-        _hybridSaver.Save(this);
+        _logger.LogDebug($"Reloaded CKFS with {LociEventData.Events.Count} events.");
     }
 
     public void Dispose()
@@ -60,15 +50,15 @@ public sealed class PresetsFS : CkFileSystem<LociPreset>, IMediatorSubscriber, I
             _hybridSaver.Save(this);
     }
 
-    public bool FindLeaf(LociPreset loot, [NotNullWhen(true)] out Leaf? leaf)
+    public bool FindLeaf(LociEvent loot, [NotNullWhen(true)] out Leaf? leaf)
     {
-        leaf = Root.GetAllDescendants(ISortMode<LociPreset>.Lexicographical)
+        leaf = Root.GetAllDescendants(ISortMode<LociEvent>.Lexicographical)
             .OfType<Leaf>()
             .FirstOrDefault(l => l.Value == loot);
         return leaf != null;
     }
 
-    private void OnPresetChange(FSChangeType type, LociPreset item, string? oldName)
+    private void OnLociEventChange(FSChangeType type, LociEvent item, string? oldName)
     {
         switch (type)
         {
@@ -95,10 +85,7 @@ public sealed class PresetsFS : CkFileSystem<LociPreset>, IMediatorSubscriber, I
                         UpdateLeafValue(existingLeaf, item);
                     // Detect potential renames.
                     if (existingLeaf.Name != CkRichText.StripDisallowedRichTags(item.Title, 0))
-                    {
-                        Svc.Logger.Information($"Renaming [{existingLeaf.Name}] -> [{CkRichText.StripDisallowedRichTags(item.Title, 0)}]");
                         RenameWithDuplicates(existingLeaf, CkRichText.StripDisallowedRichTags(item.Title, 0));
-                    }
                     return;
                 }
             case FSChangeType.Renamed when oldName != null:
@@ -106,7 +93,7 @@ public sealed class PresetsFS : CkFileSystem<LociPreset>, IMediatorSubscriber, I
                     if (!FindLeaf(item, out var leaf))
                         return;
 
-                    var old = CkRichText.StripDisallowedRichTags(item.Title, 0).FixName();
+                    var old = CkRichText.StripDisallowedRichTags(oldName, 0).FixName();
                     if (old == leaf.Name || leaf.Name.IsDuplicateName(out var baseName, out _) && baseName == old)
                         RenameWithDuplicates(leaf, CkRichText.StripDisallowedRichTags(item.Title, 0));
                     return;
@@ -115,32 +102,32 @@ public sealed class PresetsFS : CkFileSystem<LociPreset>, IMediatorSubscriber, I
     }
 
     // Used for saving and loading.
-    private static string PresetToIdentifier(LociPreset item)
+    private static string LociEventToIdentifier(LociEvent item)
         => item.ID.ToString();
 
-    private static string PresetToName(LociPreset item)
+    private static string LociEventToName(LociEvent item)
         => CkRichText.StripDisallowedRichTags(item.Title, 0).FixName();
 
-    private static bool PresetHasDefaultPath(LociPreset item, string fullPath)
+    private static bool LociEventHasDefaultPath(LociEvent item, string fullPath)
     {
-        var regex = new Regex($@"^{Regex.Escape(PresetToName(item))}( \(\d+\))?$");
+        var regex = new Regex($@"^{Regex.Escape(LociEventToName(item))}( \(\d+\))?$");
         return regex.IsMatch(fullPath);
     }
 
-    private static (string, bool) SavePreset(LociPreset item, string fullPath)
-        => PresetHasDefaultPath(item, fullPath) ? (string.Empty, false) : (PresetToIdentifier(item), true);
+    private static (string, bool) SaveLociEvent(LociEvent item, string fullPath)
+        => LociEventHasDefaultPath(item, fullPath) ? (string.Empty, false) : (LociEventToIdentifier(item), true);
 
     // HybridSavable
     public int ConfigVersion => 0;
     public HybridSaveType SaveType => HybridSaveType.StreamWrite;
     public DateTime LastWriteTimeUTC { get; private set; } = DateTime.MinValue;
     public string GetFileName(FileProvider files, out bool _)
-        => (_ = false, files.CKFS_Presets).Item2;
+        => (_ = false, files.CKFS_Events).Item2;
 
     public string JsonSerialize()
         => throw new NotImplementedException();
 
     public void WriteToStream(StreamWriter writer) 
-        => SaveToFile(writer, SavePreset, true);
+        => SaveToFile(writer, SaveLociEvent, true);
 }
 

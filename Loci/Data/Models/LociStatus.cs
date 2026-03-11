@@ -1,4 +1,5 @@
-﻿using MemoryPack;
+﻿using LociApi.Enums;
+using MemoryPack;
 
 namespace Loci.Data;
 
@@ -12,7 +13,7 @@ public partial class LociStatus
     // Essential
     public const int Version = 3;
     public Guid GUID = Guid.NewGuid();
-    public int IconID;
+    public uint IconID;
     public string Title = "";
     public string Description = "";
     public string CustomFXPath = "";
@@ -128,39 +129,6 @@ public partial class LociStatus
             Applier = Applier,
             Dispeller = Dispeller,
         };
-
-    public static LociStatus FromTuple(LociStatusInfo statusInfo)
-    {
-        var totalTime = statusInfo.ExpireTicks == -1 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(statusInfo.ExpireTicks);
-        return new LociStatus
-        {
-            GUID = statusInfo.GUID,
-            IconID = statusInfo.IconID,
-            Title = statusInfo.Title,
-            Description = statusInfo.Description,
-            CustomFXPath = statusInfo.CustomVFXPath,
-
-            Type = statusInfo.Type,
-            Stacks = statusInfo.Stacks,
-            StackSteps = statusInfo.StackSteps,
-            StackToChain = statusInfo.StackToChain,
-            Modifiers = (Modifiers)statusInfo.Modifiers,
-
-            ChainedGUID = statusInfo.ChainedGUID,
-            ChainedType = statusInfo.ChainType,
-            ChainTrigger = statusInfo.ChainTrigger,
-
-            Applier = statusInfo.Applier,
-            Dispeller = statusInfo.Dispeller,
-
-            // Additional variables we can run assumptions on.
-            Days = totalTime.Days,
-            Hours = totalTime.Hours,
-            Minutes = totalTime.Minutes,
-            Seconds = totalTime.Seconds,
-            NoExpire = statusInfo.ExpireTicks == -1,
-        };
-    }
 
     public string ReportString()
         => $"[LociStatus: GUID={GUID}," +

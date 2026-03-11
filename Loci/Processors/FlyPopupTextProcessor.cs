@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Loci.Data;
+using LociApi.Enums;
 using Lumina.Excel.Sheets;
 
 namespace Loci.Processors;

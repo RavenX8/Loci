@@ -14,7 +14,7 @@ global using Bagagwa = System.Exception;
 global using LociStatusInfo = (
     int Version,
     System.Guid GUID,
-    int IconID,
+    uint IconID,
     string Title,
     string Description,
     string CustomVFXPath,                   // What VFX to show on application.

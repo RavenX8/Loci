@@ -1,7 +1,6 @@
 using CkCommons.DrawSystem;
 using Dalamud.Bindings.ImGui;
 using Loci.Data;
-using CkCommons;
 
 namespace Loci.DrawSystem;
 

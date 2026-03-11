@@ -3,14 +3,11 @@ using CkCommons.Gui;
 using CkCommons.Gui.Utility;
 using CkCommons.Raii;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using Loci.Data;
 using Loci.DrawSystem;
 using Loci.Services;
-using OtterGui.Extensions;
 using OtterGui.Text;
-using static FFXIVClientStructs.FFXIV.Client.UI.Misc.GroupPoseModule;
 
 namespace Loci.Gui;
 

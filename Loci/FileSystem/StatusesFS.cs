@@ -26,7 +26,7 @@ public sealed class StatusesFS : CkFileSystem<LociStatus>, IMediatorSubscriber, 
         _hybridSaver = saver;
 
         Mediator.Subscribe<LociStatusChanged>(this, _ => OnStatusChange(_.Type, _.Item, _.OldString));
-        Mediator.Subscribe<ReloadCKFS>(this, _ => { if (!_.IsPresetFS) Reload(); });
+        Mediator.Subscribe<ReloadCKFS>(this, _ => { if (_.Module is LociModule.Statuses) Reload(); });
         Changed += OnChange;
         Reload();
     }

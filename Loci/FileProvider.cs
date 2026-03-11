@@ -24,6 +24,7 @@ public class FileProvider : IConfigFileProvider
     public string DDS_Managers => Path.Combine(FileSysDirectory, "dds-managers.json");
     public string CKFS_Statuses => Path.Combine(FileSysDirectory, "fs-statuses.json");
     public string CKFS_Presets => Path.Combine(FileSysDirectory, "fs-presets.json");
+    public string CKFS_Events => Path.Combine(FileSysDirectory, "fs-events.json");
 
     public FileProvider()
     {

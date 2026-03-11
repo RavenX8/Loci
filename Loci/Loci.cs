@@ -1,12 +1,12 @@
 using CkCommons;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
+using Loci.Api;
 using Loci.Commands;
 using Loci.Data;
 using Loci.DrawSystem;
 using Loci.Gui;
 using Loci.Gui.Components;
-using Loci.Interop;
 using Loci.Processors;
 using Loci.Services;
 using Loci.Services.Mediator;
@@ -102,12 +102,13 @@ public static class LociServiceExtensions
         // UI
         .AddSingleton<LociUITabs>()
         // Ipc Provider
-        .AddSingleton<IpcProvider>();
+        .AddSingleton<IpcProviders>();
     #endregion GenericServices
 
     public static IServiceCollection AddIPC(this IServiceCollection services)
     => services
-        .AddSingleton<IpcProvider>();
+        .AddSingleton<ILociApi>(p => p.GetRequiredService<LociApiMain>())
+        .AddSingleton<IpcProviders>();
     public static IServiceCollection AddConfigs(this IServiceCollection services)
     => services
         // Purely Client
@@ -147,7 +148,6 @@ public static class LociServiceExtensions
         .AddHostedService(p => p.GetRequiredService<SaveService>())
         .AddHostedService(p => p.GetRequiredService<LociMediator>())
         .AddHostedService(p => p.GetRequiredService<CharaWatcher>())
-        .AddHostedService(p => p.GetRequiredService<IpcProvider>())
         .AddHostedService(p => p.GetRequiredService<LociMemory>())
         .AddHostedService(p => p.GetRequiredService<LociProcessor>())
         .AddHostedService(p => p.GetRequiredService<LociHost>());

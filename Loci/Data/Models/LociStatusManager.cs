@@ -1,6 +1,7 @@
 ﻿using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Loci.Processors;
+using LociApi.Enums;
 using MemoryPack;
 
 namespace Loci.Data;
@@ -60,38 +61,47 @@ public class ActorSM
         return (failed.Count < ids.Count, failed);
     }
 
-    public bool UnlockStatus(Guid id, uint key)
-        => LockedStatuses.TryGetValue(id, out var k) && k == key && LockedStatuses.Remove(id);
-
-    public (bool, List<Guid>) UnlockStatuses(List<Guid> ids, uint key)
+    /// <summary>
+    ///   Attempts to unlock an ID.
+    /// </summary>
+    /// <returns> True if already unlocked, or if unlock worked. </returns>
+    public bool UnlockStatusIfNeeded(Guid id, uint key)
     {
-        var failed = new List<Guid>();
+        var isLocked = LockedStatuses.TryGetValue(id, out var k);
+        return !isLocked || k == key && LockedStatuses.Remove(id);
+    }
+
+    public bool UnlockStatuses(List<Guid> ids, uint key, out List<Guid> failed)
+    {
+        failed = [];
         foreach (var id in ids)
         {
-            // if any of these fail, we failed to unlock the status.
-            if (!LockedStatuses.TryGetValue(id, out var curKey) || curKey != key || !LockedStatuses.Remove(id))
+            if (!LockedStatuses.TryGetValue(id, out var k))
+                continue;
+            // Fail if the keys dont match
+            if (k != key || !LockedStatuses.Remove(id))
                 failed.Add(id);
         }
         // If failed is less than the ids size, some worked.
-        return (failed.Count < ids.Count, failed);
+        return failed.Count < ids.Count;
     }
 
     /// <summary>
     ///     Unlocks all statuses matching the key. <para />
     ///     Statuses locked by other keys are not affected.
     /// </summary>
-    public bool ClearLocks(uint key)
+    public int ClearLocks(uint key)
     {
-        var removedAny = false;
+        int removed = 0;
         foreach (var (id, activeLock) in LockedStatuses.ToArray())
         {
-            if (activeLock == key)
-            {
-                LockedStatuses.Remove(id);
-                removedAny = true;
-            }
+            if (activeLock != key)
+                continue;
+            // Remove this lock.
+            LockedStatuses.Remove(id);
+            removed++;
         }
-        return removedAny;
+        return removed;
     }
 
     /// <summary>
@@ -135,7 +145,6 @@ public class ActorSM
     /// </summary>
     public LociStatus? AddOrUpdate(LociStatus status, bool check = true, bool triggerEvent = true, uint key = 0)
     {
-
         if (status is null || status.IsNull())
         {
             Svc.Logger.Warning($"Status was not added because it is null");
@@ -159,7 +168,7 @@ public class ActorSM
             {
                 // If this status is locked, prevent updates and just return the current.
                 if (LockedStatuses.TryGetValue(status.GUID, out var curKey) && (key is 0 || curKey != key))
-                    return Statuses[i];
+                    return null;
 
                 // If we are increasing stacks, handle the stack update logic.
                 if (status.Modifiers.Has(Modifiers.StacksIncrease))
@@ -256,11 +265,11 @@ public class ActorSM
     }
 
     // Effectively 'remove'
-    public bool Cancel(Guid id, bool triggerEvent = true)
+    public bool Cancel(Guid id, bool triggerEvent = true, uint key = 0)
     {
         // Prevent removal if this ID is locked.
         // (This assumes this is not called for natural falloff)
-        if (LockedStatuses.ContainsKey(id))
+        if (!UnlockStatusIfNeeded(id, key))
             return false;
         // Cancel that status.
         if (Statuses.FirstOrDefault(s => s.GUID == id) is { } status)
@@ -273,41 +282,42 @@ public class ActorSM
         return false;
     }
 
-    public void Cancel(LociStatus myStatus, bool triggetEvent = true)
-        => Cancel(myStatus.GUID, triggetEvent);
+    // Need to do a firstordefault since the appied status could have a different state.
+    public bool Cancel(LociStatus myStatus, bool triggetEvent = true, uint key = 0)
+        => Cancel(myStatus.GUID, triggetEvent, key);
 
     /// <summary>
     ///     Applies a LociPreset to this SM. <para />
     ///     Application behavior is determined by the Preset's ApplicationType.
     /// </summary>
-    public void ApplyPreset(LociPreset preset)
+    /// <remarks> Determine a good way to identify partial success indication later. </remarks>
+    public void ApplyPreset(LociPreset preset, uint key = 0)
     {
-        var ignore = Statuses.Where(x => x.Persistent).Select(x => x.GUID).ToList();
-        if (preset.ApplyType is PresetApplyType.ReplaceAll)
-        {
-            foreach (var x in Statuses)
-                if (!x.Persistent && !preset.Statuses.Contains(x.GUID))
-                    Cancel(x);
-        }
-        else if (preset.ApplyType is PresetApplyType.IgnoreExisting)
-        {
-            foreach (var x in Statuses)
-                ignore.Add(x.GUID);
-        }
+        var ignore = new HashSet<Guid>(Statuses.Where(s => s.Persistent).Select(s => s.GUID));
 
-        // Now go through and apply the statuses to the manager.
-        foreach (var x in preset.Statuses)
-            if (LociData.Statuses.FirstOrDefault(z => z.GUID == x) is { } s && !ignore.Contains(s.GUID))
-                AddOrUpdate(Utils.PreApply(s));
+        if (preset.ApplyType is PresetApplyType.IgnoreExisting)
+            foreach (var s in Statuses)
+                ignore.Add(s.GUID);
+
+        // Locked statuses wont be canceled by this
+        if (preset.ApplyType is PresetApplyType.ReplaceAll)
+            foreach (var s in Statuses)
+                if (!ignore.Contains(s.GUID) && !preset.Statuses.Contains(s.GUID))
+                    Cancel(s);
+
+        foreach (var id in preset.Statuses)
+            if (LociData.Statuses.FirstOrDefault(x => x.GUID == id) is { } s && !ignore.Contains(s.GUID))
+                AddOrUpdate(s.PreApply(), key: key);
     }
 
-    // Any locked statuses will not be removed.
-    // (Originally used by commands)
-    public void RemovePreset(LociPreset p)
+    /// <summary>
+    ///   Removes a preset from the status manager, and can be provided an unlock key.
+    /// </summary>
+    /// <remarks> Determine a good way to identify partial success indication later. </remarks>
+    public void RemovePreset(LociPreset p, uint key = 0)
     {
         foreach (var x in p.Statuses)
-            if (LociData.Statuses.FirstOrDefault(z => z.GUID == x) is { } status)
-                Cancel(status);
+            Cancel(x, key: key);
     }
 
     public byte[] BinarySerialize()
