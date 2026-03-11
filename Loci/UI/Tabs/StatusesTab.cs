@@ -16,12 +16,15 @@ using Loci.Data;
 using Loci.DrawSystem;
 using Loci.Processors;
 using Loci.Services;
+using Loci.Services.Mediator;
+using LociApi.Enums;
 using OtterGui.Text;
 
 namespace Loci.Gui;
 
 public class StatusesTab : IDisposable
 {
+    private readonly LociMediator _mediator;
     private readonly StatusSelector _selector;
     private readonly LociData _data;
     private readonly LociManager _loci;
@@ -30,9 +33,10 @@ public class StatusesTab : IDisposable
     private SavedStatusesCombo _ownStatusCombo;
     private SavedPresetsCombo _ownPresetsCombo; 
 
-    public StatusesTab(ILogger<StatusesTab> logger, StatusSelector selector, LociData data,
-        LociManager loci, FavoritesConfig favorites)
+    public StatusesTab(ILogger<StatusesTab> logger, LociMediator mediator, StatusSelector selector,
+        LociData data, LociManager loci, FavoritesConfig favorites)
     {
+        _mediator = mediator;
         _selector = selector;
         _data = data;
         _loci = loci;
@@ -156,7 +160,7 @@ public class StatusesTab : IDisposable
             var buttonTxt = $"{(_selectedHost.Length is 0 ? "(No Host Chosen)" : $"Apply to Target ({_selectedHost})")}";
             // Sends an event to listeners of the actor address, the host it is intended for, and the tuple data being applied.
             if (CkGui.IconTextButton(FAI.PersonBurst, buttonTxt, disabled: _selectedHost.Length is 0))
-                IpcProvider.OnApplyToTarget((nint)chara, _selectedHost, status.ToTuple());
+                _mediator.Publish(new ApplyToTargetMessage((nint)chara, _selectedHost, [status.ToTuple()]));
         }
     }
 
@@ -596,16 +600,14 @@ public class StatusesTab : IDisposable
                 {
                     // Update it
                     status.CustomFXPath = LociProcessor.StatusEffectPaths[i];
-                    _loci.Save();
-                    IpcProvider.OnStatusModified(status, false);
+                    _data.MarkStatusModified(status);
                 }
         }
         // Detect clearing.
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
             status.CustomFXPath = string.Empty;
-            _loci.Save();
-            IpcProvider.OnStatusModified(status, false);
+            _data.MarkStatusModified(status);
         }
         CkGui.AttachToolTip("Select a custom VFX that summons upon application.");
     }

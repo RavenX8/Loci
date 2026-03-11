@@ -7,7 +7,7 @@ namespace Loci.Api;
 
 // Commonly shared helper logic.
 // Maybe make it more of a helper later
-public class ApiHelpers(LociManager manager, StatusesFS statusFS, PresetsFS presetFS, LociEventsFS eventsFS)
+public class ApiHelpers(StatusesFS statusFS, PresetsFS presetFS, LociEventsFS eventsFS)
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public string ToLociName(string charaName, string buddyName)

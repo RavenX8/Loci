@@ -15,14 +15,13 @@ public class SMDrawSystem : DynamicDrawSystem<ActorSM>, IMediatorSubscriber, IDi
     public const string PET_TAG = "Pets"; // Not working atm maybe idk
 
     private readonly ILogger<SMDrawSystem> _logger;
-    private readonly LociManager _manager;
     private readonly SaveService _hybridSaver;
 
     private readonly object _folderUpdateLock = new();
 
     public LociMediator Mediator { get; init; }
 
-    public SMDrawSystem(ILogger<SMDrawSystem> logger, LociMediator mediator, LociManager manager, SaveService saver)
+    public SMDrawSystem(ILogger<SMDrawSystem> logger, LociMediator mediator, SaveService saver)
     {
         _logger = logger;
         Mediator = mediator;

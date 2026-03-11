@@ -76,7 +76,6 @@ public sealed class Loci : IDalamudPlugin
 
 public static class LociServiceExtensions
 {
-    #region GenericServices
     public static IServiceCollection AddGeneric(this IServiceCollection services)
     => services
         // Necessary Services
@@ -86,6 +85,7 @@ public static class LociServiceExtensions
         .AddSingleton<SMDrawer>()
         .AddSingleton<PresetSelector>()
         .AddSingleton<StatusSelector>()
+        .AddSingleton<EventsSelector>()
         // Loci
         .AddSingleton<LociMemory>()
         .AddSingleton<LociProcessor>()
@@ -101,12 +101,20 @@ public static class LociServiceExtensions
         .AddSingleton<LociMediator>()
         // UI
         .AddSingleton<LociUITabs>()
+        .AddSingleton<IpcTesterTabs>()
         // Ipc Provider
         .AddSingleton<IpcProviders>();
-    #endregion GenericServices
 
     public static IServiceCollection AddIPC(this IServiceCollection services)
     => services
+        .AddSingleton<ApiHelpers>()
+        .AddSingleton<RegistryApi>()
+        .AddSingleton<StatusManagerApi>()
+        .AddSingleton<StatusApi>()
+        .AddSingleton<PresetApi>()
+        .AddSingleton<EventApi>()
+        .AddSingleton<LociApiMain>()
+        .AddSingleton<LociApiMain>()
         .AddSingleton<ILociApi>(p => p.GetRequiredService<LociApiMain>())
         .AddSingleton<IpcProviders>();
     public static IServiceCollection AddConfigs(this IServiceCollection services)
@@ -114,12 +122,14 @@ public static class LociServiceExtensions
         // Purely Client
         .AddSingleton<MainConfig>()
         .AddSingleton<LociData>()
+        .AddSingleton<LociEventData>()
         .AddSingleton<FavoritesConfig>()
         .AddSingleton<LociManager>()
         // DDS & CKFS
         .AddSingleton<SMDrawSystem>()
         .AddSingleton<StatusesFS>() 
         .AddSingleton<PresetsFS>()
+        .AddSingleton<LociEventsFS>()
         // Managers / Savers
         .AddSingleton<FileProvider>()
         .AddSingleton<SaveService>();
@@ -131,13 +141,15 @@ public static class LociServiceExtensions
         .AddScoped<StatusesTab>()
         .AddScoped<PresetsTab>()
         .AddScoped<ManagersTab>()
+        .AddScoped<LociEventsTab>()
         .AddScoped<SettingsTab>()
         .AddScoped<DebugTab>()
-        .AddScoped<IpcTesterTab>()
+        .AddScoped<WindowMediatorSubscriberBase, IpcTesterUI>()
         .AddScoped<IpcTesterRegistration>()
         .AddScoped<IpcTesterStatusManagers>()
         .AddScoped<IpcTesterStatuses>()
-        .AddScoped<IpcTesterPresets>()       
+        .AddScoped<IpcTesterPresets>() 
+        .AddScoped<IpcTesterEvents>()
         .AddScoped<DDSDebugger>()
         .AddScoped<CommandManager>()
         .AddScoped<UiService>();

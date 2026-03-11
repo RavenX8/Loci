@@ -83,8 +83,6 @@ public class IpcTesterEvents : IIpcTesterGroup
 
     public unsafe void Draw()
     {
-        using var _ = ImRaii.TreeNode("Events");
-        if (!_) return;
         var width = ImGui.GetContentRegionAvail().X / 2;
         ImGuiUtil.GuidInput("Event GUID##lociEvent-id", "GUID...", "", ref _lociEventGuid, ref _lociEventGuidString, width);
         var refId = _lociEventGuid ?? _lastEventInfo.GUID;
@@ -122,42 +120,42 @@ public class IpcTesterEvents : IIpcTesterGroup
         CkGui.ColorText(_lastReturnCode.ToString(), ImGuiColors.DalamudYellow);
 
         // Event monitor
-        IpcTesterTab.DrawIpcRowStart("Last Modified Event", _lastEventUpdated.Event.ToString());
+        IpcTesterUI.DrawIpcRowStart("Last Modified Event", _lastEventUpdated.Event.ToString());
         ImGui.TableNextColumn();
         ImGui.Text("Was Deleted?:");
         CkGui.BoolIcon(_lastEventUpdated.WasDeleted, true);
 
         // Getting Data
-        IpcTesterTab.DrawIpcRowStart(GetEventList.Label, "Get Event List");
+        IpcTesterUI.DrawIpcRowStart(GetEventList.Label, "Get Event List");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed))
             _lastEventList = new GetEventList(Svc.PluginInterface).Invoke();
 
-        IpcTesterTab.DrawIpcRowStart(GetEventInfo.Label, "Get Event Info");
+        IpcTesterUI.DrawIpcRowStart(GetEventInfo.Label, "Get Event Info");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed || !isGuidValid))
             (_lastReturnCode, _lastEventInfo) = new GetEventInfo(Svc.PluginInterface).Invoke(_lociEventGuid!.Value);
 
-        IpcTesterTab.DrawIpcRowStart(GetEventInfoList.Label, "Get All Event Info");
+        IpcTesterUI.DrawIpcRowStart(GetEventInfoList.Label, "Get All Event Info");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed))
             _allEventInfo = new GetEventInfoList(Svc.PluginInterface).Invoke();
 
-        IpcTesterTab.DrawIpcRowStart(GetEventSummary.Label, "Get Event Summary");
+        IpcTesterUI.DrawIpcRowStart(GetEventSummary.Label, "Get Event Summary");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed || !isGuidValid))
             (_lastReturnCode, _lastEventSummary) = new GetEventSummary(Svc.PluginInterface).Invoke(_lociEventGuid!.Value);
 
-        IpcTesterTab.DrawIpcRowStart(GetEventSummaryList.Label, "Get All Event Summaries");
+        IpcTesterUI.DrawIpcRowStart(GetEventSummaryList.Label, "Get All Event Summaries");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed))
             _lastBulkSummary = new GetEventSummaryList(Svc.PluginInterface).Invoke();
 
         // Event Handling
-        IpcTesterTab.DrawIpcRowStart(CreateEvent.Label, "Create Event");
+        IpcTesterUI.DrawIpcRowStart(CreateEvent.Label, "Create Event");
         if (CkGui.SmallIconTextButton(FAI.Plus, "Create", disabled: !IsSubscribed || _eventName.Length is 0))
             _lociEventGuid = new CreateEvent(Svc.PluginInterface).Invoke(_eventName, string.Empty, LociEventType.JobChange);
 
-        IpcTesterTab.DrawIpcRowStart(DeleteEvent.Label, "Delete Event");
+        IpcTesterUI.DrawIpcRowStart(DeleteEvent.Label, "Delete Event");
         if (CkGui.SmallIconTextButton(FAI.Times, "Delete", disabled: !IsSubscribed || !isGuidValid))
             _lastReturnCode = new DeleteEvent(Svc.PluginInterface).Invoke(_lociEventGuid!.Value);
 
-        IpcTesterTab.DrawIpcRowStart(SetEventState.Label, "Set Enable State");
+        IpcTesterUI.DrawIpcRowStart(SetEventState.Label, "Set Enable State");
         if (CkGui.SmallIconTextButton(FAI.ToggleOn, "Enable", disabled: !IsSubscribed || !isGuidValid))
             _lastReturnCode = new SetEventState(Svc.PluginInterface).Invoke(_lociEventGuid!.Value, true);
         CkGui.AttachToolTip("Only sets to on right now");

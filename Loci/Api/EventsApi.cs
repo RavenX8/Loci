@@ -18,7 +18,7 @@ public class EventApi : DisposableMediatorSubscriberBase, ILociApiEvents
         _helpers = helpers;
         _manager = manager;
         _data = data;
-        Mediator.Subscribe<EventModifiedMessage>(this, OnEventUpdated);
+        Mediator.Subscribe<LociEventChanged>(this, _ => OnEventUpdated(_.Item.GUID, _.Type is FSChangeType.Deleted));
     }
 
     public Dictionary<Guid, string> GetEventList()
@@ -112,9 +112,8 @@ public class EventApi : DisposableMediatorSubscriberBase, ILociApiEvents
                 ? LociApiEc.Success : LociApiEc.NoChange;
     }
 
-    private void OnEventUpdated(EventModifiedMessage msg)
-        => EventUpdated?.Invoke(msg.EventId, msg.WasDeleted);
-
+    private void OnEventUpdated(Guid id, bool wasDeleted)
+        => EventUpdated?.Invoke(id, wasDeleted);
     private void OnEventPathMoved(Guid eventId, string oldPath, string newPath)
         => EventPathMoved?.Invoke(eventId, oldPath, newPath);
 

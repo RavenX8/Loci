@@ -18,3 +18,5 @@ public record OpenMainUiTab(LociUITabs.SelectedTab ToOpen) : MessageBase;
 ///     Fired when the main UI's tabbar changes.
 /// </summary>
 public record TabBarChangedMessage(LociUITabs.SelectedTab NewTab) : MessageBase;
+
+public record IpcTabBarChangedMessage(IpcTesterTabs.SelectedTab NewTab) : MessageBase;

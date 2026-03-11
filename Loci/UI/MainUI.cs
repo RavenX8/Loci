@@ -18,13 +18,14 @@ public class MainUI : WindowMediatorSubscriberBase
     private readonly StatusesTab _statusTab;
     private readonly PresetsTab _presetTab;
     private readonly ManagersTab _managersTab;
+    private readonly LociEventsTab _eventsTab;
     private readonly SettingsTab _settingsTab;
     private readonly DebugTab _debugTab;
-    private readonly IpcTesterTab _ipcTab;
 
     public MainUI(ILogger<MainUI> logger, LociMediator mediator, LociUITabs tabs,
         MainConfig config, StatusesTab statusTab, PresetsTab presetTab,
-        ManagersTab managersTab, SettingsTab settingsTab, DebugTab debug, IpcTesterTab ipcTab)
+        ManagersTab managersTab, LociEventsTab eventsTab, SettingsTab settingsTab, 
+        DebugTab debug)
         : base(logger, mediator, "Loci - Custom Status Control###Loci_LociUI")
     {
         _tabMenu = tabs;
@@ -32,13 +33,14 @@ public class MainUI : WindowMediatorSubscriberBase
         _statusTab = statusTab;
         _presetTab = presetTab;
         _managersTab = managersTab;
+        _eventsTab = eventsTab;
         _settingsTab = settingsTab;
         _debugTab = debug;
-        _ipcTab = ipcTab;
 
-
-        this.PinningClickthroughFalse();
-        this.SetBoundaries(new(800, 450), ImGui.GetIO().DisplaySize);        
+        this.SetBoundaries(new(800, 450), ImGui.GetIO().DisplaySize);
+        TitleBarButtons = new TitleBarButtonBuilder()
+            .Add(FAI.Flask, "Ipc Tester", () => Mediator.Publish(new UiToggleMessage(typeof(IpcTesterUI))))
+            .Build();
         // Update the tab menu selection.
         _tabMenu.TabSelection = _config.Current.CurrentTab;
     }
@@ -67,14 +69,14 @@ public class MainUI : WindowMediatorSubscriberBase
             case LociUITabs.SelectedTab.Managers:
                 _managersTab.DrawSection(_.InnerRegion);
                 break;
+            case LociUITabs.SelectedTab.Events:
+                _eventsTab.DrawSection(_.InnerRegion);
+                break;
             case LociUITabs.SelectedTab.Settings:
                 _settingsTab.DrawSettings();
                 break;
             case LociUITabs.SelectedTab.Logging:
                 _debugTab.DrawLoggers();
-                break;
-            case LociUITabs.SelectedTab.IpcTester:
-                _ipcTab.DrawSection();
                 break;
         }
     }

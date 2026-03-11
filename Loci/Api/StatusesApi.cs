@@ -19,7 +19,7 @@ public class StatusApi : DisposableMediatorSubscriberBase, ILociApiStatuses
         _helpers = helpers;
         _manager = manager;
         _data = data;
-        Mediator.Subscribe<StatusModifiedMessage>(this, OnStatusUpdated);
+        Mediator.Subscribe<LociStatusChanged>(this, _ => OnStatusUpdated(_.Item.GUID, _.Type is FSChangeType.Deleted));
         Mediator.Subscribe<ChainTriggerHitMessage>(this, OnChainTriggerHit);
     }
 
@@ -351,8 +351,8 @@ public class StatusApi : DisposableMediatorSubscriberBase, ILociApiStatuses
     public int UnlockAll(uint key)
         => LociManager.ClientSM.ClearLocks(key);
 
-    private void OnStatusUpdated(StatusModifiedMessage msg)
-        => StatusUpdated?.Invoke(msg.StatusId, msg.WasDeleted);
+    private void OnStatusUpdated(Guid id, bool wasDeleted)
+        => StatusUpdated?.Invoke(id, wasDeleted);
 
     private void OnChainTriggerHit(ChainTriggerHitMessage msg)
         => ChainTriggerHit?.Invoke(msg.Address, msg.StatusId, msg.Trigger, msg.ChainType, msg.ChainedId);

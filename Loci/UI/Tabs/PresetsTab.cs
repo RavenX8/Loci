@@ -14,6 +14,7 @@ using Loci.Combos;
 using Loci.Data;
 using Loci.DrawSystem;
 using Loci.Services;
+using Loci.Services.Mediator;
 using OtterGui.Extensions;
 using OtterGui.Text;
 
@@ -24,14 +25,17 @@ public class PresetsTab : IDisposable
     private const string DRAGDROP_LABEL = "PRESET_ORDER";
     private static float SELECTOR_WIDTH => 250f * ImGuiHelpers.GlobalScale;
 
+    private readonly LociMediator _mediator;
     private readonly PresetSelector _selector;
     private readonly LociData _data;
     private readonly LociManager _manager;
 
     private readonly Queue<Action> _postDrawActions = new();
     private SavedStatusesCombo _ownStatusCombo;
-    public PresetsTab(ILogger<PresetsTab> logger, PresetSelector selector, LociData data, LociManager manager)
+    public PresetsTab(ILogger<PresetsTab> logger, LociMediator mediator, 
+        PresetSelector selector, LociData data, LociManager manager)
     {
+        _mediator = mediator;
         _selector = selector;
         _data = data;
         _manager = manager;
@@ -342,7 +346,7 @@ public class PresetsTab : IDisposable
                 Generic.Safe(() =>
                 {
                     var toSend = LociData.Statuses.Where(s => preset.Statuses.Contains(s.GUID)).Select(s => s.ToTuple()).ToList();
-                    IpcProvider.OnApplyToTarget((nint)chara, _selectedHost, toSend);
+                    _mediator.Publish(new ApplyToTargetMessage((nint)chara, _selectedHost, toSend));
                 });
             }
         }

@@ -87,7 +87,6 @@ public sealed class LociEventData : IHybridSavable
         _logger.LogDebug($"Modified event {lociEvent.Title}.", LoggerType.DataManagement);
         _saver.Save(this);
         _mediator.Publish(new LociEventChanged(FSChangeType.Modified, lociEvent, prevName is not null ? prevName : null));
-        // IpcProvider.OnEventModified(lociEvent, false);
     }
 
     public void DeleteEvent(LociEvent lociEvent)

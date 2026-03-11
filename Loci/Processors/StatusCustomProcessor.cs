@@ -3,6 +3,7 @@ using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Loci.Data;
+using LociApi.Enums;
 
 namespace Loci.Processors;
 public unsafe class StatusCustomProcessor : IDisposable

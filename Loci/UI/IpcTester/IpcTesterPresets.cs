@@ -75,8 +75,6 @@ public class IpcTesterPresets : IIpcTesterGroup
 
     public unsafe void Draw()
     {
-        using var _ = ImRaii.TreeNode("Presets");
-        if (!_) return;
         var width = ImGui.GetContentRegionAvail().X / 2;
         ImGuiUtil.GuidInput("Preset GUID##preset-id", "GUID...", "", ref _presetGuid, ref _presetGuidString, width);
         var refId = _presetGuid ?? _lastPresetInfo.GUID;
@@ -127,43 +125,43 @@ public class IpcTesterPresets : IIpcTesterGroup
         CkGui.ColorText(_lastReturnCode.ToString(), ImGuiColors.DalamudYellow);
 
         // Event monitor
-        IpcTesterTab.DrawIpcRowStart("Last Modified Preset", _lastPresetUpdated.Preset.ToString());
+        IpcTesterUI.DrawIpcRowStart("Last Modified Preset", _lastPresetUpdated.Preset.ToString());
         ImGui.TableNextColumn();
         ImGui.Text("Was Deleted?:");
         CkGui.BoolIcon(_lastPresetUpdated.WasDeleted, true);
 
         // Getting Data
-        IpcTesterTab.DrawIpcRowStart(GetPresetInfo.Label, "Get Preset Info");
+        IpcTesterUI.DrawIpcRowStart(GetPresetInfo.Label, "Get Preset Info");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed || !isGuidValid))
             (_lastReturnCode, _lastPresetInfo) = new GetPresetInfo(Svc.PluginInterface).Invoke(_presetGuid!.Value);
 
-        IpcTesterTab.DrawIpcRowStart(GetPresetInfoList.Label, "Get All Preset Info");
+        IpcTesterUI.DrawIpcRowStart(GetPresetInfoList.Label, "Get All Preset Info");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed))
             _allPresetInfo = new GetPresetInfoList(Svc.PluginInterface).Invoke();
 
-        IpcTesterTab.DrawIpcRowStart(GetPresetSummary.Label, "Get Preset Summary");
+        IpcTesterUI.DrawIpcRowStart(GetPresetSummary.Label, "Get Preset Summary");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed || !isGuidValid))
             (_lastReturnCode, _lastPresetSummary) = new GetPresetSummary(Svc.PluginInterface).Invoke(_presetGuid!.Value);
 
-        IpcTesterTab.DrawIpcRowStart(GetPresetSummaryList.Label, "Get All Preset Summaries");
+        IpcTesterUI.DrawIpcRowStart(GetPresetSummaryList.Label, "Get All Preset Summaries");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed))
             _lastBulkSummary = new GetPresetSummaryList(Svc.PluginInterface).Invoke();
 
         // Application.
-        IpcTesterTab.DrawIpcRowStart(ApplyPreset.Label, "Apply Preset (Client)");
+        IpcTesterUI.DrawIpcRowStart(ApplyPreset.Label, "Apply Preset (Client)");
         if (CkGui.SmallIconTextButton(FAI.Plus, "Apply", disabled: !IsSubscribed || !isGuidValid))
             _lastReturnCode = new ApplyPreset(Svc.PluginInterface).Invoke(_presetGuid!.Value, _lockCode);
 
-        IpcTesterTab.DrawIpcRowStart(ApplyPresetInfo.Label, "Apply Tuple (Client)");
+        IpcTesterUI.DrawIpcRowStart(ApplyPresetInfo.Label, "Apply Tuple (Client)");
         if (CkGui.SmallIconTextButton(FAI.Plus, "Apply", disabled: !IsSubscribed || _lastPresetInfo.GUID == Guid.Empty))
             _lastReturnCode = new ApplyPresetInfo(Svc.PluginInterface).Invoke(_lastPresetInfo, _lockCode);
 
-        IpcTesterTab.DrawIpcRowStart(ApplyPresetByPtr.Label, "Apply by Ptr");
+        IpcTesterUI.DrawIpcRowStart(ApplyPresetByPtr.Label, "Apply by Ptr");
         if (CkGui.SmallIconTextButton(FAI.Plus, "Apply", disabled: !IsSubscribed || _actorAddr == nint.Zero || !isGuidValid))
             _lastReturnCode = new ApplyPresetByPtr(Svc.PluginInterface).Invoke(_presetGuid!.Value, _actorAddr);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
 
-        IpcTesterTab.DrawIpcRowStart(ApplyPresetByName.Label, "Apply by Player Name");
+        IpcTesterUI.DrawIpcRowStart(ApplyPresetByName.Label, "Apply by Player Name");
         if (CkGui.SmallIconTextButton(FAI.Upload, "Apply to Player", disabled: !IsSubscribed || _playerName.Length == 0 || !isGuidValid))
             _lastReturnCode = new ApplyPresetByName(Svc.PluginInterface).Invoke(_presetGuid!.Value, _playerName);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
@@ -177,16 +175,16 @@ public class IpcTesterPresets : IIpcTesterGroup
         }
 
         // Removal
-        IpcTesterTab.DrawIpcRowStart(RemovePreset.Label, "Remove (Client)");
+        IpcTesterUI.DrawIpcRowStart(RemovePreset.Label, "Remove (Client)");
         if (CkGui.SmallIconTextButton(FAI.Trash, "Remove", disabled: !IsSubscribed || !isGuidValid))
             _lastReturnCode = new RemovePreset(Svc.PluginInterface).Invoke(_presetGuid!.Value, _lockCode);
 
-        IpcTesterTab.DrawIpcRowStart(RemovePresetByPtr.Label, "Remove by Ptr");
+        IpcTesterUI.DrawIpcRowStart(RemovePresetByPtr.Label, "Remove by Ptr");
         if (CkGui.SmallIconTextButton(FAI.Trash, "Remove", disabled: !IsSubscribed || _actorAddr == nint.Zero))
             _lastReturnCode = new RemovePresetByPtr(Svc.PluginInterface).Invoke(_presetGuid!.Value, _actorAddr);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
 
-        IpcTesterTab.DrawIpcRowStart(RemovePresetByName.Label, "Remove by Player Name");
+        IpcTesterUI.DrawIpcRowStart(RemovePresetByName.Label, "Remove by Player Name");
         if (CkGui.SmallIconTextButton(FAI.Upload, "Remove from Player", disabled: !IsSubscribed || _playerName.Length == 0 || !isGuidValid))
             _lastReturnCode = new RemovePresetByName(Svc.PluginInterface).Invoke(_presetGuid!.Value, _playerName);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);

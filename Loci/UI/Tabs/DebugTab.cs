@@ -2,7 +2,10 @@ using CkCommons;
 using CkCommons.Gui;
 using CkCommons.Gui.Utility;
 using CkCommons.Raii;
+using CkCommons.RichText;
+using CkCommons.Textures;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using Loci.Data;
 using Loci.DrawSystem;
@@ -45,9 +48,18 @@ public class DebugTab
 
         DrawFilters();
 
+#if DEBUG
         ImGui.Spacing();
         ImGui.Separator();
         _ddsDebug.DrawDDSDebug("Status Manager DDS", _smDDS);
+
+        ImGui.Separator();
+        if (ImGui.CollapsingHeader("Status Managers"))
+        {
+            foreach (var (name, manager) in LociManager.Managers)
+                DrawActorSM(name, manager);
+        }
+#endif
     }
 
     private void DrawFilters()
@@ -101,6 +113,106 @@ public class DebugTab
                 if (i < flagGroup.Length - 1)
                     ImGui.SameLine();
             }
+        }
+    }
+
+    private void DrawActorSM(string name, ActorSM manager)
+    {
+        using var _ = ImRaii.TreeNode(name);
+        if (!_) return;
+
+        ImGui.Text("Owner Valid:");
+        ImGui.SameLine();
+        CkGui.ColorTextBool(manager.OwnerValid ? "Valid" : "Invalid", manager.OwnerValid);
+
+        ImGui.Text("AddTextShown:");
+        CkGui.ColorTextInline(string.Join(", ", manager.AddTextShown.Select(g => g.ToString())), ImGuiColors.DalamudViolet);
+
+        ImGui.Text("RemTextShown:");
+        CkGui.ColorTextInline(string.Join(", ", manager.RemTextShown.Select(g => g.ToString())), ImGuiColors.DalamudViolet);
+
+        ImGui.Text("Ephemeral:");
+        CkGui.ColorTextInline(manager.Ephemeral.ToString(), ImGuiColors.DalamudViolet);
+        if (manager.Ephemeral)
+        {
+            using (ImRaii.PushIndent())
+            {
+                foreach (var host in manager.EphemeralHosts)
+                    CkGui.ColorText(host, ImGuiColors.DalamudViolet);
+            }
+        }
+
+        using (var locks = ImRaii.TreeNode("Active Locks"))
+        {
+            if (locks)
+            {
+                foreach (var (id, key) in manager.LockedStatuses)
+                {
+                    CkGui.ColorText(id.ToString(), ImGuiColors.DalamudYellow);
+                    CkGui.TextInline(" -> Locked by key");
+                    CkGui.ColorTextInline($"[{key}]", ImGuiColors.DalamudViolet);
+                }
+            }
+        }
+
+        using (var statuses = ImRaii.TreeNode("Active Statuses"))
+        {
+            if (statuses)
+                DrawStatuses(name, manager.Statuses);
+        }
+    }
+
+    private void DrawStatuses(string id, IEnumerable<LociStatus> statuses)
+    {
+        using var _ = ImRaii.Table($"{id}-statuslist", 11, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
+        if (!_) return;
+
+        ImGui.TableSetupColumn("ID");
+        ImGui.TableSetupColumn("IconID");
+        ImGui.TableSetupColumn("Title");
+        ImGui.TableSetupColumn("Description");
+        ImGui.TableSetupColumn("VFX Path");
+        ImGui.TableSetupColumn("Type");
+        ImGui.TableSetupColumn("Modifiers");
+        ImGui.TableSetupColumn("Stacks");
+        ImGui.TableSetupColumn("Stack Steps");
+        ImGui.TableSetupColumn("Chain Status");
+        ImGui.TableSetupColumn("Chain Trigger");
+        ImGui.TableHeadersRow();
+
+        foreach (var status in statuses)
+        {
+            ImGui.TableNextColumn();
+            CkGui.HoverIconText(FAI.InfoCircle, ImGuiColors.TankBlue.ToUint());
+            CkGui.AttachToolTip(status.ID);
+            ImGui.TableNextColumn();
+            if (LociIcon.TryGetGameIcon((uint)status.IconID, false, out var wrap))
+            {
+                ImGui.Image(wrap.Handle, LociIcon.SizeFramed);
+                CkGui.AttachToolTip($"{status.IconID}");
+            }
+            else
+                ImGui.Text($"{status.IconID}");
+
+            ImGui.TableNextColumn();
+            CkRichText.Text(status.Title, 777);
+            ImGui.TableNextColumn();
+            ImGui.Dummy(new(200f, 0));
+            CkRichText.Text(200f, status.Description, 777);
+            ImGui.TableNextColumn();
+            ImGui.Text($"{status.CustomFXPath}");
+            ImGui.TableNextColumn();
+            ImGui.Text($"{status.Type}");
+            ImGui.TableNextColumn();
+            ImGui.Text(string.Join("\n", status.Modifiers));
+            ImGui.TableNextColumn();
+            ImGui.Text($"{status.Stacks}");
+            ImGui.TableNextColumn();
+            ImGui.Text($"{status.StackSteps}");
+            ImGui.TableNextColumn();
+            ImGui.Text($"{status.ChainedGUID}");
+            ImGui.TableNextColumn();
+            ImGui.Text(status.ChainTrigger.ToString());
         }
     }
 }

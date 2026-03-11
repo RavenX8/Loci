@@ -5,6 +5,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Loci.Data;
 using Loci.Services;
+using LociApi.Enums;
 using Microsoft.Extensions.Hosting;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Xml;

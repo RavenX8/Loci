@@ -5,7 +5,7 @@ using LociApi.Enums;
 
 namespace Loci.Api;
 
-public class RegistryApi(ApiHelpers helpers, LociManager manager) : ILociApiRegistry
+public class RegistryApi(ApiHelpers helpers) : ILociApiRegistry
 {
     public LociApiEc RegisterByPtr(nint address, string hostLabel)
     {

@@ -84,8 +84,6 @@ public class IpcTesterStatuses : IIpcTesterGroup
     }
     public unsafe void Draw()
     {
-        using var _ = ImRaii.TreeNode("Statuses");
-        if (!_) return;
         var width = ImGui.GetContentRegionAvail().X / 2;
         ImGuiUtil.GuidInput("Status GUID##status-id", "GUID...", "", ref _statusGuid, ref _statusGuidString, width);
         var refId = _statusGuid ?? _lastStatusInfo.GUID;
@@ -157,43 +155,43 @@ public class IpcTesterStatuses : IIpcTesterGroup
         CkGui.ColorText(_lastReturnCode.ToString(), ImGuiColors.DalamudYellow);
 
         // Event monitor
-        IpcTesterTab.DrawIpcRowStart("Last Modified Status", _lastStatusUpdated.Status.ToString());
+        IpcTesterUI.DrawIpcRowStart("Last Modified Status", _lastStatusUpdated.Status.ToString());
         ImGui.TableNextColumn();
         ImGui.Text("Was Deleted?:");
         CkGui.BoolIcon(_lastStatusUpdated.WasDeleted, true);
 
         // Getting Data
-        IpcTesterTab.DrawIpcRowStart(GetStatusInfo.Label, "Get Status Info");
+        IpcTesterUI.DrawIpcRowStart(GetStatusInfo.Label, "Get Status Info");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed || !isGuidValid))
             (_lastReturnCode, _lastStatusInfo) = new GetStatusInfo(Svc.PluginInterface).Invoke(_statusGuid!.Value);
 
-        IpcTesterTab.DrawIpcRowStart(GetStatusInfoList.Label, "Get All Status Info");
+        IpcTesterUI.DrawIpcRowStart(GetStatusInfoList.Label, "Get All Status Info");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed))
             _allStatusInfo = new GetStatusInfoList(Svc.PluginInterface).Invoke();
 
-        IpcTesterTab.DrawIpcRowStart(GetStatusSummary.Label, "Get Status Summary");
+        IpcTesterUI.DrawIpcRowStart(GetStatusSummary.Label, "Get Status Summary");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed || !isGuidValid))
             (_lastReturnCode, _lastStatusSummary) = new GetStatusSummary(Svc.PluginInterface).Invoke(_statusGuid!.Value);
 
-        IpcTesterTab.DrawIpcRowStart(GetStatusSummaryList.Label, "Get All Status Summaries");
+        IpcTesterUI.DrawIpcRowStart(GetStatusSummaryList.Label, "Get All Status Summaries");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed))
             _lastBulkSummary = new GetStatusSummaryList(Svc.PluginInterface).Invoke();
 
         // Application.
-        IpcTesterTab.DrawIpcRowStart(ApplyStatus.Label, "Apply Status (Client)");
+        IpcTesterUI.DrawIpcRowStart(ApplyStatus.Label, "Apply Status (Client)");
         if (CkGui.SmallIconTextButton(FAI.Plus, "Apply", disabled: !IsSubscribed || !isGuidValid))
             _lastReturnCode = new ApplyStatus(Svc.PluginInterface).Invoke(_statusGuid!.Value, _lockCode);
 
-        IpcTesterTab.DrawIpcRowStart(ApplyStatusInfo.Label, "Apply Tuple (Client)");
+        IpcTesterUI.DrawIpcRowStart(ApplyStatusInfo.Label, "Apply Tuple (Client)");
         if (CkGui.SmallIconTextButton(FAI.Plus, "Apply", disabled: !IsSubscribed || _lastStatusInfo.GUID == Guid.Empty))
             _lastReturnCode = new ApplyStatusInfo(Svc.PluginInterface).Invoke(_lastStatusInfo, _lockCode);
 
-        IpcTesterTab.DrawIpcRowStart(ApplyStatusByPtr.Label, "Apply by Ptr");
+        IpcTesterUI.DrawIpcRowStart(ApplyStatusByPtr.Label, "Apply by Ptr");
         if (CkGui.SmallIconTextButton(FAI.Plus, "Apply", disabled: !IsSubscribed || _actorAddr == nint.Zero || !isGuidValid))
             _lastReturnCode = new ApplyStatusByPtr(Svc.PluginInterface).Invoke(_statusGuid!.Value, _actorAddr);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
 
-        IpcTesterTab.DrawIpcRowStart(ApplyStatusByName.Label, "Apply by Player Name");
+        IpcTesterUI.DrawIpcRowStart(ApplyStatusByName.Label, "Apply by Player Name");
         if (CkGui.SmallIconTextButton(FAI.Upload, "Apply to Player", disabled: !IsSubscribed || _playerName.Length == 0 || !isGuidValid))
             _lastReturnCode = new ApplyStatusByName(Svc.PluginInterface).Invoke(_statusGuid!.Value, _playerName);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
@@ -207,16 +205,16 @@ public class IpcTesterStatuses : IIpcTesterGroup
         }
 
         // Removal
-        IpcTesterTab.DrawIpcRowStart(RemoveStatus.Label, "Remove (Client)");
+        IpcTesterUI.DrawIpcRowStart(RemoveStatus.Label, "Remove (Client)");
         if (CkGui.SmallIconTextButton(FAI.Trash, "Remove", disabled: !IsSubscribed || !isGuidValid))
             _lastReturnCode = new RemoveStatus(Svc.PluginInterface).Invoke(_statusGuid!.Value, _lockCode);
 
-        IpcTesterTab.DrawIpcRowStart(RemoveStatusByPtr.Label, "Remove by Ptr");
+        IpcTesterUI.DrawIpcRowStart(RemoveStatusByPtr.Label, "Remove by Ptr");
         if (CkGui.SmallIconTextButton(FAI.Trash, "Remove", disabled: !IsSubscribed || _actorAddr == nint.Zero))
             _lastReturnCode = new RemoveStatusByPtr(Svc.PluginInterface).Invoke(_statusGuid!.Value, _actorAddr);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
 
-        IpcTesterTab.DrawIpcRowStart(RemoveStatusByName.Label, "Remove by Player Name");
+        IpcTesterUI.DrawIpcRowStart(RemoveStatusByName.Label, "Remove by Player Name");
         if (CkGui.SmallIconTextButton(FAI.Upload, "Remove from Player", disabled: !IsSubscribed || _playerName.Length == 0 || !isGuidValid))
             _lastReturnCode = new RemoveStatusByName(Svc.PluginInterface).Invoke(_statusGuid!.Value, _playerName);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
@@ -230,19 +228,19 @@ public class IpcTesterStatuses : IIpcTesterGroup
         }
 
         // Locking
-        IpcTesterTab.DrawIpcRowStart(CanLock.Label, "Can Lock cur GUID");
+        IpcTesterUI.DrawIpcRowStart(CanLock.Label, "Can Lock cur GUID");
         if (CkGui.SmallIconTextButton(FAI.QuestionCircle, "Can Unlock", disabled: !IsSubscribed || !isGuidValid))
             _lastCanLock = new CanLock(Svc.PluginInterface).Invoke(_statusGuid!.Value);
 
-        IpcTesterTab.DrawIpcRowStart(LockStatus.Label, "Lock Status");
+        IpcTesterUI.DrawIpcRowStart(LockStatus.Label, "Lock Status");
         if (CkGui.SmallIconTextButton(FAI.Lock, "Lock", disabled: !IsSubscribed || !isGuidValid))
             _lastReturnCode = new LockStatus(Svc.PluginInterface).Invoke(_statusGuid!.Value, _lockCode);
 
-        IpcTesterTab.DrawIpcRowStart(UnlockStatus.Label, "Unlock Status");
+        IpcTesterUI.DrawIpcRowStart(UnlockStatus.Label, "Unlock Status");
         if (CkGui.SmallIconTextButton(FAI.Unlock, "Unlock", disabled: !IsSubscribed || !isGuidValid))
             _lastReturnCode = new UnlockStatus(Svc.PluginInterface).Invoke(_statusGuid!.Value, _lockCode);
 
-        IpcTesterTab.DrawIpcRowStart(UnlockAll.Label, "Clear Locks for key");
+        IpcTesterUI.DrawIpcRowStart(UnlockAll.Label, "Clear Locks for key");
         if (CkGui.SmallIconTextButton(FAI.Broom, "Clear", disabled: !IsSubscribed))
             _lastUnlockAllRes = new UnlockAll(Svc.PluginInterface).Invoke(_lockCode);
 

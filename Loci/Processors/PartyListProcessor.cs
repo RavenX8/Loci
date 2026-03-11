@@ -4,6 +4,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Loci.Data;
+using LociApi.Enums;
 
 namespace Loci.Processors;
 public unsafe class PartyListProcessor : IDisposable

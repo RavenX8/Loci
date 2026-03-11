@@ -9,16 +9,15 @@ using Loci.Services.Mediator;
 
 namespace Loci.Gui.Components;
 
-public class LociUITabs : IconTextTabBar<LociUITabs.SelectedTab>
+public class IpcTesterTabs : IconTextTabBar<IpcTesterTabs.SelectedTab>
 {
     public enum SelectedTab
     {
+        Registry,
         Statuses,
         Presets,
-        Managers,
+        StatusManagers,
         Events,
-        Settings,
-        Logging,
     }
 
     public override SelectedTab TabSelection
@@ -26,26 +25,25 @@ public class LociUITabs : IconTextTabBar<LociUITabs.SelectedTab>
         get => base.TabSelection;
         set
         {
-            _config.Current.CurrentTab = value;
+            _config.Current.IpcTab = value;
             _config.Save();
             base.TabSelection = value;
         }
     }
 
     private readonly MainConfig _config;
-    public LociUITabs(MainConfig config, LociMediator mediator)
+    public IpcTesterTabs(MainConfig config, LociMediator mediator)
     {
         _config = config;
-        TabSelection = _config.Current.CurrentTab;
+        TabSelection = _config.Current.IpcTab;
 
-        AddDrawButton(FAI.TheaterMasks, "Statuses", SelectedTab.Statuses, "Your Loci Statuses");
-        AddDrawButton(FAI.LayerGroup, "Presets", SelectedTab.Presets, "Your Loci Presets");
-        AddDrawButton(FAI.Wrench, "Managers", SelectedTab.Managers, "Manage statuses on Actors");
-        AddDrawButton(FAI.Stopwatch, "Events", SelectedTab.Events, "Create and manage Loci Events");
-        AddDrawButton(FAI.Cog, "Settings", SelectedTab.Settings, "Configure your Options and Settings");
-        AddDrawButton(FAI.Pen, "Logging", SelectedTab.Logging, "Options for logging filters");
+        AddDrawButton(FAI.Scroll, "Registry", SelectedTab.Registry, "IPC related to Ephemeral Host Control");
+        AddDrawButton(FAI.TheaterMasks, "Statuses", SelectedTab.Statuses, "IPC related to Statuses");
+        AddDrawButton(FAI.LayerGroup, "Presets", SelectedTab.Presets, "IPC related to Presets");
+        AddDrawButton(FAI.Wrench, "Managers", SelectedTab.StatusManagers, "IPC related to StatusManagers");
+        AddDrawButton(FAI.Exclamation, "LociEvents", SelectedTab.Events, "IPC related to LociEvents");
 
-        TabSelectionChanged += (oldTab, newTab) => mediator.Publish(new TabBarChangedMessage(newTab));
+        TabSelectionChanged += (oldTab, newTab) => mediator.Publish(new IpcTabBarChangedMessage(newTab));
     }
 
     public override void Draw(float availableWidth)

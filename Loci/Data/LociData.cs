@@ -127,7 +127,6 @@ public sealed class LociData : IHybridSavable
         _logger.LogDebug($"Modified status {status.Title}.", LoggerType.DataManagement);
         _saver.Save(this);
         _mediator.Publish(new LociStatusChanged(FSChangeType.Modified, status, prevName is not null ? prevName : null));
-        // IpcProvider.OnStatusModified(status, false);
     }
 
     public void MarkPresetModified(LociPreset preset, string? prevName = null)
@@ -136,7 +135,6 @@ public sealed class LociData : IHybridSavable
         _logger.LogDebug($"Modified preset {preset.Title}.", LoggerType.DataManagement);
         _saver.Save(this);
         _mediator.Publish(new LociPresetChanged(FSChangeType.Modified, preset, prevName is not null ? prevName : null));
-        // IpcProvider.OnPresetModified(preset, false);
     }
 
     public void DeleteStatus(LociStatus status)
@@ -211,6 +209,55 @@ public sealed class LociData : IHybridSavable
         _saver.Save(this);
     }
 
+    public void SundStatusMigration(JObject jObj)
+    {
+        if (jObj is null)
+            return;
+        var savedStatuses = jObj["Statuses"]?.ToObject<List<JObject>>() ?? new();
+        foreach (var statusObj in savedStatuses)
+        {
+            try
+            {
+                // Construct the LociStatus
+                var status = new LociStatus
+                {
+                    GUID = statusObj["GUID"]?.ToObject<Guid>() ?? throw new Bagagwa("Status missing GUID"),
+                    IconID = statusObj["IconID"]?.ToObject<uint>() ?? 0,
+                    Title = statusObj["Title"]?.ToObject<string>() ?? "",
+                    Description = statusObj["Description"]?.ToObject<string>() ?? "",
+                    CustomFXPath = statusObj["CustomFXPath"]?.ToObject<string>() ?? "",
+                    ExpiresAt = statusObj["ExpiresAt"]?.ToObject<long>() ?? 0,
+                    Type = (StatusType)(statusObj["Type"]?.ToObject<byte>() ?? 0), // convert to byte enum
+                    Modifiers = (Modifiers)(statusObj["Modifiers"]?.ToObject<int>() ?? 0),
+                    Stacks = statusObj["Stacks"]?.ToObject<int>() ?? 1,
+                    StackSteps = statusObj["StackSteps"]?.ToObject<int>() ?? 0,
+                    StackToChain = statusObj["StackToChain"]?.ToObject<int>() ?? 0,
+                    ChainedGUID = statusObj["ChainedGUID"]?.ToObject<Guid>() ?? Guid.Empty,
+                    ChainedType = (ChainType)(statusObj["ChainedType"]?.ToObject<byte>() ?? 0),
+                    ChainTrigger = (ChainTrigger)(statusObj["ChainTrigger"]?.ToObject<int>() ?? 0),
+                    Applier = statusObj["Applier"]?.ToObject<string>() ?? "",
+                    Dispeller = statusObj["Dispeller"]?.ToObject<string>() ?? "",
+                    Persistent = statusObj["Persistent"]?.ToObject<bool>() ?? false,
+                    Days = statusObj["Days"]?.ToObject<int>() ?? 0,
+                    Hours = statusObj["Hours"]?.ToObject<int>() ?? 0,
+                    Minutes = statusObj["Minutes"]?.ToObject<int>() ?? 0,
+                    Seconds = statusObj["Seconds"]?.ToObject<int>() ?? 0,
+                    NoExpire = statusObj["NoExpire"]?.ToObject<bool>() ?? false,
+                };
+                // Ignore clones
+                if (Statuses.Any(s => s.GUID == status.GUID))
+                    continue;
+                // Ensure unique title.
+                _statuses.Add(status);
+            }
+            catch
+            {
+                _logger.LogWarning($"Failed to migrate status: {statusObj}");
+            }
+        }
+        _saver.Save(this);
+    }
+
     public void MoodlePresetMigration(JObject jObj)
     {
         if (jObj is null)
@@ -222,7 +269,7 @@ public sealed class LociData : IHybridSavable
             {
                 var preset = new LociPreset
                 {
-                    GUID = presetObj["GUID"]?.ToObject<Guid>() ?? Guid.NewGuid(),
+                    GUID = presetObj["GUID"]?.ToObject<Guid>() ?? throw new Bagagwa("Missing GUID"),
                     Statuses = presetObj["Statuses"]?.ToObject<List<Guid>>() ?? new(),
                     ApplyType = (PresetApplyType)(presetObj["ApplicationType"]?.ToObject<byte>() ?? 0),
                     Title = presetObj["Title"]?.ToObject<string>() ?? "",
@@ -231,6 +278,37 @@ public sealed class LociData : IHybridSavable
                 if (Presets.Any(p => p.GUID == preset.GUID))
                     continue;
                 // Ensure unique title.
+                _presets.Add(preset);
+            }
+            catch
+            {
+                _logger.LogWarning($"Failed to migrate preset: {presetObj}");
+            }
+        }
+        _saver.Save(this);
+    }
+
+    public void SundPresetMigration(JObject jObj)
+    {
+        if (jObj is null)
+            return;
+        var savedPresets = jObj["Presets"]?.ToObject<List<JObject>>() ?? new();
+        foreach (var presetObj in savedPresets)
+        {
+            try
+            {
+                var preset = new LociPreset
+                {
+                    GUID = presetObj["GUID"]?.ToObject<Guid>() ?? throw new Bagagwa("Missing GUID"),
+                    Statuses = presetObj["Statuses"]?.ToObject<List<Guid>>() ?? new(),
+                    ApplyType = (PresetApplyType)(presetObj["ApplyType"]?.ToObject<byte>() ?? 0),
+                    Title = presetObj["Title"]?.ToObject<string>() ?? "",
+                    Description = presetObj["Description"]?.ToObject<string>() ?? "",
+                };
+                // Prevent duplicates
+                if (Presets.Any(p => p.GUID == preset.GUID))
+                    continue;
+                // Add it if ID was unique.
                 _presets.Add(preset);
             }
             catch

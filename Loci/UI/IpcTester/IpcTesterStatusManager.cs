@@ -68,9 +68,6 @@ public class IpcTesterStatusManagers : IIpcTesterGroup
 
     public unsafe void Draw()
     {
-        using var _ = ImRaii.TreeNode("LociManagers");
-        if (!_) return;
-
         if (ImGui.InputTextWithHint("##sm-chara-addr", "Player Address..", ref _actorAddrString, 16, ImGuiInputTextFlags.CharsHexadecimal))
             _actorAddr = nint.TryParse(_actorAddrString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var tmp) ? tmp : nint.Zero;
         ImGui.InputTextWithHint("##sm-actor-name", "Player Name@World...", ref _playerName, 64);
@@ -110,24 +107,24 @@ public class IpcTesterStatusManagers : IIpcTesterGroup
         ImGui.TableNextColumn();
         CkGui.ColorText(_lastReturnCode.ToString(), ImGuiColors.DalamudYellow);
 
-        IpcTesterTab.DrawIpcRowStart("Last Modified Manager Actor", $"{LastAddrModified:X}");
+        IpcTesterUI.DrawIpcRowStart("Last Modified Manager Actor", $"{LastAddrModified:X}");
 
         // Getters (Base64)
-        IpcTesterTab.DrawIpcRowStart(GetManager.Label, "Get Own Manager");
+        IpcTesterUI.DrawIpcRowStart(GetManager.Label, "Get Own Manager");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed))
         {
             var r = new GetManager(Svc.PluginInterface).Invoke();
             (_lastReturnCode, _managerBase64) = (r.Item1, r.Item2 ?? string.Empty);
         }
 
-        IpcTesterTab.DrawIpcRowStart(GetManagerByPtr.Label, "Get Manager by Ptr");
+        IpcTesterUI.DrawIpcRowStart(GetManagerByPtr.Label, "Get Manager by Ptr");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed || _actorAddr == nint.Zero))
         {
             var r = new GetManagerByPtr(Svc.PluginInterface).Invoke(_actorAddr);
             (_lastReturnCode, _managerBase64) = (r.Item1, r.Item2 ?? string.Empty);
         }
 
-        IpcTesterTab.DrawIpcRowStart(GetManagerByName.Label, "Get Manager by Name");
+        IpcTesterUI.DrawIpcRowStart(GetManagerByName.Label, "Get Manager by Name");
         if (CkGui.SmallIconTextButton(FAI.Search, "Get", disabled: !IsSubscribed || _playerName.Length == 0))
         {
             var r = new GetManagerByName(Svc.PluginInterface).Invoke(_playerName);
@@ -135,29 +132,29 @@ public class IpcTesterStatusManagers : IIpcTesterGroup
         }
 
         // Getters (Tuples)
-        IpcTesterTab.DrawIpcRowStart(GetManagerInfo.Label, "Get Own Info");
+        IpcTesterUI.DrawIpcRowStart(GetManagerInfo.Label, "Get Own Info");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed))
             _lastManagerInfo = new GetManagerInfo(Svc.PluginInterface).Invoke();
 
-        IpcTesterTab.DrawIpcRowStart(GetManagerInfoByPtr.Label, "Get Info by Ptr");
+        IpcTesterUI.DrawIpcRowStart(GetManagerInfoByPtr.Label, "Get Info by Ptr");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed || _actorAddr == nint.Zero))
             _lastManagerInfo = new GetManagerInfoByPtr(Svc.PluginInterface).Invoke(_actorAddr);
 
-        IpcTesterTab.DrawIpcRowStart(GetManagerInfoByName.Label, "Get Info by Name");
+        IpcTesterUI.DrawIpcRowStart(GetManagerInfoByName.Label, "Get Info by Name");
         if (CkGui.SmallIconTextButton(FAI.List, "Get", disabled: !IsSubscribed || _playerName.Length == 0))
             _lastManagerInfo = new GetManagerInfoByName(Svc.PluginInterface).Invoke(_playerName);
 
         // Setters (Base64)
-        IpcTesterTab.DrawIpcRowStart(SetManager.Label, "Set Own Manager");
+        IpcTesterUI.DrawIpcRowStart(SetManager.Label, "Set Own Manager");
         if (CkGui.SmallIconTextButton(FAI.Upload, "Set", disabled: !IsSubscribed || _managerBase64.Length is 0))
             _lastReturnCode = new SetManager(Svc.PluginInterface).Invoke(_managerBase64);
 
-        IpcTesterTab.DrawIpcRowStart(SetManagerByPtr.Label, "Set Manager by Ptr");
+        IpcTesterUI.DrawIpcRowStart(SetManagerByPtr.Label, "Set Manager by Ptr");
         if (CkGui.SmallIconTextButton(FAI.Upload, "Set", disabled: !IsSubscribed || _actorAddr == nint.Zero || _managerBase64.Length is 0))
             _lastReturnCode = new SetManagerByPtr(Svc.PluginInterface).Invoke(_actorAddr, _managerBase64);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
 
-        IpcTesterTab.DrawIpcRowStart(SetManagerByName.Label, "Set Manager by Name");
+        IpcTesterUI.DrawIpcRowStart(SetManagerByName.Label, "Set Manager by Name");
         if (CkGui.SmallIconTextButton(FAI.Upload, "Set Player", disabled: !IsSubscribed || _playerName.Length == 0 || _managerBase64.Length is 0))
             _lastReturnCode = new SetManagerByName(Svc.PluginInterface).Invoke(_playerName, _managerBase64);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
@@ -171,16 +168,16 @@ public class IpcTesterStatusManagers : IIpcTesterGroup
         }
 
         // Clear
-        IpcTesterTab.DrawIpcRowStart(ClearManager.Label, "Clear Own Manager");
+        IpcTesterUI.DrawIpcRowStart(ClearManager.Label, "Clear Own Manager");
         if (CkGui.SmallIconTextButton(FAI.Trash, "Clear", disabled: !IsSubscribed))
             _lastReturnCode = new ClearManager(Svc.PluginInterface).Invoke();
 
-        IpcTesterTab.DrawIpcRowStart(ClearManagerByPtr.Label, "Clear Manager by Ptr");
+        IpcTesterUI.DrawIpcRowStart(ClearManagerByPtr.Label, "Clear Manager by Ptr");
         if (CkGui.SmallIconTextButton(FAI.Trash, "Clear", disabled: !IsSubscribed || _actorAddr == nint.Zero))
             _lastReturnCode = new ClearManagerByPtr(Svc.PluginInterface).Invoke(_actorAddr);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
 
-        IpcTesterTab.DrawIpcRowStart(ClearManagerByName.Label, "Clear Manager by Name");
+        IpcTesterUI.DrawIpcRowStart(ClearManagerByName.Label, "Clear Manager by Name");
         if (CkGui.SmallIconTextButton(FAI.Trash, "Clear Player", disabled: !IsSubscribed || _playerName.Length == 0))
             _lastReturnCode = new ClearManagerByName(Svc.PluginInterface).Invoke(_playerName);
         CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);

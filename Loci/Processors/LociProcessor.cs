@@ -231,7 +231,7 @@ public class LociProcessor : DisposableMediatorSubscriberBase, IHostedService
                 {
                     try
                     {
-                        IpcProvider.OnSMModified((nint)sm.Owner);
+                        Mediator.Publish(new ActorSMChanged((nint)sm.Owner));
                     }
                     catch (Bagagwa e)
                     {

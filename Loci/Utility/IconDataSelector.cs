@@ -140,7 +140,7 @@ public class IconDataSelector
                 if (ImGui.RadioButton($"{info.Name}##{info.IconID}", status.IconID == info.IconID))
                 {
                     // Ensure we update the title and description if the data matched.
-                    var oldInfo = Utils.GetIconData((uint)status.IconID);
+                    var oldInfo = Utils.GetIconData(status.IconID);
                     if (AutoFill)
                     {
                         if (status.Title.Length is 0 || status.Title == oldInfo?.Name)
@@ -150,7 +150,7 @@ public class IconDataSelector
                             status.Description = info.Description;
                     }
                     // Update icon regardless, then return true
-                    status.IconID = (int)info.IconID;
+                    status.IconID = info.IconID;
                     return true;
                 }
 

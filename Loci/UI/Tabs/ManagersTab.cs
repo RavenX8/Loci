@@ -13,6 +13,7 @@ using Loci.Services;
 using Loci.Services.Mediator;
 using OtterGui.Extensions;
 using OtterGui.Text;
+using static System.ComponentModel.Design.ObjectSelectorEditor;
 
 namespace Loci.Gui;
 
@@ -36,15 +37,23 @@ public class ManagersTab
 
     public void DrawSection(Vector2 region)
     {
-        using (ImRaii.Child("selector", new Vector2(SELECTOR_WIDTH, ImGui.GetContentRegionAvail().Y), true))
-        {
-            var width = ImGui.GetContentRegionAvail().X;
-            _drawer.DrawFilterRow(width, 50);
-            _drawer.DrawContents(width, 0f, 2f, DynamicFlags.SelectableLeaves);
-        }
+        using var table = ImRaii.Table("divider", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.NoHostExtendY, region);
+        if (!table) return;
 
-        ImGui.SameLine();
-        using var _ = CkRaii.Child("manager editor", ImGui.GetContentRegionAvail());
+        ImGui.TableSetupColumn("selector", ImGuiTableColumnFlags.WidthFixed, SELECTOR_WIDTH);
+        ImGui.TableSetupColumn("content", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableNextRow();
+
+        ImGui.TableNextColumn();
+        _drawer.DrawFilterRow(SELECTOR_WIDTH, 50);
+        _drawer.DrawContents(SELECTOR_WIDTH, 0f, 2f, DynamicFlags.SelectableLeaves);
+
+        ImGui.TableNextColumn();
+        DrawSelectedManager();
+    }
+
+    private void DrawSelectedManager()
+    {
         if (Selected is not { } selected)
         {
             CkGui.FontTextCentered("Select an Actor to view their Status Manager!", Fonts.Default150Percent);

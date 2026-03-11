@@ -12,7 +12,8 @@ public class ConfigStorage
 
     // Tab Selection Memory
     public LociUITabs.SelectedTab CurrentTab { get; set; } = LociUITabs.SelectedTab.Statuses;
-    
+    public IpcTesterTabs.SelectedTab IpcTab { get; set; } = IpcTesterTabs.SelectedTab.Registry;
+
     // General
     public bool OpenOnStartup { get; set; } = true;
 

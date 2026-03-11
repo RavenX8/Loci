@@ -19,7 +19,7 @@ public class PresetApi : DisposableMediatorSubscriberBase, ILociApiPresets
         _helpers = helpers;
         _manager = manager;
         _data = data;
-        Mediator.Subscribe<PresetModifiedMessage>(this, OnPresetUpdated);
+        Mediator.Subscribe<LociPresetChanged>(this, _ => OnPresetUpdated(_.Item.GUID, _.Type is FSChangeType.Deleted));
     }
 
     public (LociApiEc, LociPresetInfo) GetPresetInfo(Guid guid)
@@ -304,8 +304,8 @@ public class PresetApi : DisposableMediatorSubscriberBase, ILociApiPresets
                ? LociApiEc.PartialSuccess : LociApiEc.Success;
     }
 
-    private void OnPresetUpdated(PresetModifiedMessage msg)
-        => PresetUpdated?.Invoke(msg.PresetId, msg.WasDeleted);
+    private void OnPresetUpdated(Guid id, bool wasDeleted)
+        => PresetUpdated?.Invoke(id, wasDeleted);
 
     public event PresetUpdatedDelegate? PresetUpdated;
 }

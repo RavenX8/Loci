@@ -59,9 +59,6 @@ public class IpcTesterRegistration : IIpcTesterGroup
 
     public unsafe void Draw()
     {
-        using var _ = ImRaii.TreeNode("Registration");
-        if (!_) return;
-
         if (ImGui.InputTextWithHint("##drawObject", "Player Address..", ref _actorAddrString, 16, ImGuiInputTextFlags.CharsHexadecimal))
             _actorAddr = nint.TryParse(_actorAddrString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var tmp) ? tmp : nint.Zero;
         ImGui.InputTextWithHint("##actorName", "Player Name@World...", ref _nameToProcess, 100);
@@ -76,7 +73,7 @@ public class IpcTesterRegistration : IIpcTesterGroup
         ImGui.TableNextColumn();
         CkGui.ColorText(_lastReturnCode.ToString(), ImGuiColors.DalamudYellow);
 
-        IpcTesterTab.DrawIpcRowStart(RegisterByPtr.Label, "Register w/ Address");
+        IpcTesterUI.DrawIpcRowStart(RegisterByPtr.Label, "Register w/ Address");
         if (CkGui.SmallIconTextButton(FAI.Share, "Register", disabled: !IsSubscribed || _actorAddr == nint.Zero))
         {
             _lastReturnCode = new RegisterByPtr(Svc.PluginInterface).Invoke(_actorAddr, _tagToBind);
@@ -91,7 +88,7 @@ public class IpcTesterRegistration : IIpcTesterGroup
             }
         }
 
-        IpcTesterTab.DrawIpcRowStart(RegisterByName.Label, "PlayerName@World / PlayerNames Pet Name");
+        IpcTesterUI.DrawIpcRowStart(RegisterByName.Label, "PlayerName@World / PlayerNames Pet Name");
         if (CkGui.SmallIconTextButton(FAI.Share, "Register", disabled: !IsSubscribed || _nameToProcess.Length > 0))
         {
             _lastReturnCode = new RegisterByName(Svc.PluginInterface).Invoke(_nameToProcess, _tagToBind);
@@ -102,7 +99,7 @@ public class IpcTesterRegistration : IIpcTesterGroup
             }
         }
 
-        IpcTesterTab.DrawIpcRowStart(UnregisterByPtr.Label, "Unregister w/ Address");
+        IpcTesterUI.DrawIpcRowStart(UnregisterByPtr.Label, "Unregister w/ Address");
         if (CkGui.SmallIconTextButton(FAI.Share, "Unregister", disabled: !IsSubscribed || _actorAddr == nint.Zero))
         {
             _lastReturnCode = new UnregisterByPtr(Svc.PluginInterface).Invoke(_actorAddr, _tagToBind);
@@ -117,7 +114,7 @@ public class IpcTesterRegistration : IIpcTesterGroup
             }
         }
 
-        IpcTesterTab.DrawIpcRowStart(UnregisterByName.Label, "PlayerName@World / PlayerNames Pet Name");
+        IpcTesterUI.DrawIpcRowStart(UnregisterByName.Label, "PlayerName@World / PlayerNames Pet Name");
         if (CkGui.SmallIconTextButton(FAI.Share, "Unregister", disabled: !IsSubscribed || _nameToProcess.Length > 0))
         {
             _lastReturnCode = new UnregisterByName(Svc.PluginInterface).Invoke(_nameToProcess, _tagToBind);
@@ -128,21 +125,21 @@ public class IpcTesterRegistration : IIpcTesterGroup
             }
         }
 
-        IpcTesterTab.DrawIpcRowStart(UnregisterAll.Label, "Unregister all for HostTag");
+        IpcTesterUI.DrawIpcRowStart(UnregisterAll.Label, "Unregister all for HostTag");
         if (CkGui.SmallIconTextButton(FAI.Share, "Unregister All", disabled: !IsSubscribed || _tagToBind.Length == 0))
         {
             _hostCountForLabel = new UnregisterAll(Svc.PluginInterface).Invoke(_tagToBind);
         }
 
-        IpcTesterTab.DrawIpcRowStart(GetHostsByPtr.Label, "Get Hosts w/ Address");
+        IpcTesterUI.DrawIpcRowStart(GetHostsByPtr.Label, "Get Hosts w/ Address");
         if (CkGui.SmallIconTextButton(FAI.Download, "Get Hosts", disabled: !IsSubscribed || _actorAddr == nint.Zero))
             _identifiedHosts = new GetHostsByPtr(Svc.PluginInterface).Invoke(_actorAddr);
 
-        IpcTesterTab.DrawIpcRowStart(GetHostsByName.Label, "Get Hosts w/ Name");
+        IpcTesterUI.DrawIpcRowStart(GetHostsByName.Label, "Get Hosts w/ Name");
         if (CkGui.SmallIconTextButton(FAI.Download, "Get Hosts", disabled: !IsSubscribed || _nameToProcess.Length == 0))
             _identifiedHosts = new GetHostsByName(Svc.PluginInterface).Invoke(_nameToProcess);
 
-        IpcTesterTab.DrawIpcRowStart(GetHostActorCount.Label, "Count Actors for Host");
+        IpcTesterUI.DrawIpcRowStart(GetHostActorCount.Label, "Count Actors for Host");
         if (CkGui.SmallIconTextButton(FAI.Download, "Get Count", disabled: !IsSubscribed || _tagToBind.Length == 0))
             _hostCountForLabel = new GetHostActorCount(Svc.PluginInterface).Invoke(_tagToBind);
     }

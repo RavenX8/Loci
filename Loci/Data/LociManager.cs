@@ -101,7 +101,7 @@ public sealed class LociManager : DisposableMediatorSubscriberBase, IHybridSavab
     {
         InitClientSM();
         // Then also do this for all other characters
-        foreach (var charaAddr in CharaWatcher.Rendered)
+        foreach (var charaAddr in CharaWatcher.Rendered.ToList())
         {
             var chara = (Character*)charaAddr;
             if (chara is null || !chara->IsCharacter() || chara->ObjectKind is not (ObjectKind.Pc or ObjectKind.Companion))

@@ -116,72 +116,117 @@ public class SettingsTab
 
     private void DrawMigrate()
     {
-        if (!OtherDirectoryExists())
+        var oldDirExists = Directory.Exists(GetOldMigratableDirectoryPath());
+        var sundDirExists = Directory.Exists(GetSundMigratableDirectoryPath());
+        if (!oldDirExists && !sundDirExists)
             return;
 
         ImGui.Separator();
+        CkGui.FontText("Data Migration", Fonts.Default150Percent);
         var shiftAndCtrlPressed = ImGui.GetIO().KeyShift && ImGui.GetIO().KeyCtrl;
 
-        if (CkGui.IconTextButton(FAI.FileImport, "Import Statuses", disabled: !shiftAndCtrlPressed))
+        if (oldDirExists)
         {
-            var statusFS = GetMigratableFile("MoodleFileSystem.json");
-            var statuses = GetMigratableFile("DefaultConfig.json");
-            if (File.Exists(statusFS) && File.Exists(statuses))
+            if (CkGui.IconTextButton(FAI.FileImport, "Import Statuses (From Moodles)", disabled: !shiftAndCtrlPressed))
             {
-                _logger.LogInformation($"Migrating from {statusFS}");
-                try
+                var statusFS = GetOldMigrationFilePath("MoodleFileSystem.json");
+                var statuses = GetOldMigrationFilePath("DefaultConfig.json");
+                if (File.Exists(statusFS) && File.Exists(statuses))
                 {
-                    var defaultJson = JObject.Parse(File.ReadAllText(statuses));
-                    _data.MoodleStatusMigration(defaultJson);
-                    _statusFileSystem.MergeWithMigratableFile(statusFS);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Failed to migrate statuses from {statuses}");
+                    _logger.LogInformation($"Migrating from {statusFS}");
+                    try
+                    {
+                        var defaultJson = JObject.Parse(File.ReadAllText(statuses));
+                        _data.MoodleStatusMigration(defaultJson);
+                        _statusFileSystem.MergeWithMigratableFile(statusFS);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Failed to migrate statuses from {statuses}");
+                    }
                 }
             }
-        }
-        CkGui.AttachToolTip("Migrate all statuses to Loci." +
-            "--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
+            CkGui.AttachToolTip("Migrate all statuses to Loci.--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
 
-        if (CkGui.IconTextButton(FAI.FileImport, "Import Presets", disabled: !shiftAndCtrlPressed))
-        {
-            var presetFS = GetMigratableFile("PresetFileSystem.json");
-            var presets = GetMigratableFile("DefaultConfig.json");
-            if (File.Exists(presetFS) && File.Exists(presets))
+            if (CkGui.IconTextButton(FAI.FileImport, "Import Presets (From Moodles)", disabled: !shiftAndCtrlPressed))
             {
-                _logger.LogInformation($"Migrating from {presetFS}");
+                var presetFS = GetOldMigrationFilePath("PresetFileSystem.json");
+                var presets = GetOldMigrationFilePath("DefaultConfig.json");
+                if (File.Exists(presetFS) && File.Exists(presets))
+                {
+                    _logger.LogInformation($"Migrating from {presetFS}");
+                    try
+                    {
+                        var defaultJson = JObject.Parse(File.ReadAllText(presets));
+                        _data.MoodlePresetMigration(defaultJson);
+                        // Then update the FS.
+                        _presetFileSystem.MergeWithMigratableFile(presetFS);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Failed to migrate presets from {presets}");
+                    }
+                }
+            }
+            CkGui.AttachToolTip("Migrate all presets to Loci.--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
+            ImGui.Separator();
+        }
+
+        if (sundDirExists)
+        {
+            if (CkGui.IconTextButton(FAI.FileImport, "Migrate Statuses (From Sundouleia)", disabled: !shiftAndCtrlPressed))
+            {
+                var statusFS = Path.Combine(GetSundMigratableDirectoryPath(), "filesystem", "fs-statuses.json");
+                var statuses = Path.Combine(GetSundMigratableDirectoryPath(), "lociData.json");
+                if (File.Exists(statusFS) && File.Exists(statuses))
+                {
+                    _logger.LogInformation($"Migrating from {statusFS}");
+                    try
+                    {
+                        var defaultJson = JObject.Parse(File.ReadAllText(statuses));
+                        _data.SundStatusMigration(defaultJson);
+                        _statusFileSystem.MergeWithMigratableFile(statusFS);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Failed to migrate statuses from {statuses}");
+                    }
+                }
+            }
+            CkGui.AttachToolTip("Migrate all statuses to Sundouleia.--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
+
+            if (CkGui.IconTextButton(FAI.FileImport, "Migrate Presets (From Sundouleia)", disabled: !shiftAndCtrlPressed))
+            {
                 try
                 {
-                    var defaultJson = JObject.Parse(File.ReadAllText(presets));
-                    _data.MoodlePresetMigration(defaultJson);
-                    // Then update the FS.
-                    _presetFileSystem.MergeWithMigratableFile(presetFS);
+                    var presetFS = Path.Combine(GetSundMigratableDirectoryPath(), "filesystem", "fs-presets.json");
+                    var presets = Path.Combine(GetSundMigratableDirectoryPath(), "lociData.json");
+                    if (File.Exists(presetFS) && File.Exists(presets))
+                    {
+                        _logger.LogInformation($"Migrating from {presetFS}");
+                        var defaultJson = JObject.Parse(File.ReadAllText(presets));
+                        _data.SundPresetMigration(defaultJson);
+                        _presetFileSystem.MergeWithMigratableFile(presetFS);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Failed to migrate presets from {presets}");
+                    _logger.LogError(ex, $"Failed to migrate presets");
                 }
             }
+            CkGui.AttachToolTip("Migrate all presets to Sundouleia.--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
         }
-        CkGui.AttachToolTip("Migrate all presets to Loci." +
-            "--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
     }
 
     #region Helpers
     // Locate if we are able to migrate
-    private string GetMigratableDirectoryPath()
-    {
-        var parentDir = Path.GetDirectoryName(FileProvider.Directory);
-        if (parentDir is null)
-            return string.Empty;
-        return Path.Combine(parentDir, "Moodles");
-    }
+    private string GetOldMigratableDirectoryPath()
+        => Path.GetDirectoryName(FileProvider.Directory) is { } path ? Path.Combine(path, "Moodles") : string.Empty;
+    
+    private string GetSundMigratableDirectoryPath()
+         => Path.GetDirectoryName(FileProvider.Directory) is { } path ? Path.Combine(path, "Sundouleia") : string.Empty;
 
-    private string GetMigratableFile(string fileName)
-        => Path.Combine(GetMigratableDirectoryPath(), fileName);
-
-    private bool OtherDirectoryExists()
-        => Directory.Exists(GetMigratableDirectoryPath());
+    private string GetOldMigrationFilePath(string fileName)
+        => Path.Combine(GetOldMigratableDirectoryPath(), fileName);
     #endregion Helpers
 }
