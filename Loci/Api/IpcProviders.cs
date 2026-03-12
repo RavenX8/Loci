@@ -15,8 +15,8 @@ public class IpcProviders : IDisposable
     public IpcProviders(ILociApi api)
     {
         // Init the independant providers
-        _disposedProvider = Disposed.Provider(Svc.PluginInterface);
         _initializedProvider = Ready.Provider(Svc.PluginInterface);
+        _disposedProvider = Disposed.Provider(Svc.PluginInterface);
 
         // The the rest of the providers..
         _providers =
@@ -50,6 +50,7 @@ public class IpcProviders : IDisposable
             ClearManager.Provider(Svc.PluginInterface, api.StatusManager),
             ClearManagerByPtr.Provider(Svc.PluginInterface, api.StatusManager),
             ClearManagerByName.Provider(Svc.PluginInterface, api.StatusManager),
+            ConvertLegacyData.Provider(Svc.PluginInterface, api.StatusManager),
 
             ManagerChanged.Provider(Svc.PluginInterface, api.StatusManager),
             ManagerStatusesChanged.Provider(Svc.PluginInterface, api.StatusManager),

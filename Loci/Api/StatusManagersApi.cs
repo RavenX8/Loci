@@ -156,8 +156,10 @@ public class StatusManagerApi : DisposableMediatorSubscriberBase, ILociApiStatus
             }
         }
         return removed > 0 ? LociApiEc.Success : LociApiEc.NoChange;
-
     }
+
+    public string ConvertLegacyData(string base64Data)
+        => _helpers.ConvertLegacyData(base64Data);
 
     private void OnManagerChanged(nint address)
         => ManagerChanged?.Invoke(address);

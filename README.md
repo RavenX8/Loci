@@ -9,3 +9,6 @@ Includes:
 - Target application
 - Companion/Pet application
 - Invokable trigger-based application
+
+### Contributions
+Plugin Icon designed by Yuzuki!

@@ -1,4 +1,6 @@
-﻿namespace Loci.Data;
+﻿using LociApi.Enums;
+
+namespace Loci.Data;
 
 [Serializable]
 public class LociPreset

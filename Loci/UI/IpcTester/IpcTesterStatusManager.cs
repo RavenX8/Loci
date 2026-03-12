@@ -27,6 +27,7 @@ public class IpcTesterStatusManagers : IIpcTesterGroup
     private string _buddyName = string.Empty;
 
     private string _managerBase64 = string.Empty;
+    private string _convertedBase64 = string.Empty;
     private List<LociStatusInfo> _lastManagerInfo = new();
 
     private LociApiEc _lastReturnCode = LociApiEc.UnkError;
@@ -75,6 +76,8 @@ public class IpcTesterStatusManagers : IIpcTesterGroup
         ImGui.InputTextWithHint("##sm-buddy-name", "Pet/Minion/Companion Name...", ref _buddyName, 64);
 
         ImGui.InputTextWithHint("##sm-base64", "Manager Base64...", ref _managerBase64, 15000);
+        // Maybe convert to copiable popup.
+        ImGui.InputTextWithHint("##sm-converted-data", "Converted Base64 Shows Here...", ref _convertedBase64, 15000, ImGuiInputTextFlags.ReadOnly);
         ImGui.SameLine();
         if (CkGui.IconTextButton(FAI.Times, "Clear Manager Info", disabled: !IsSubscribed))
             _lastManagerInfo = [];
@@ -189,5 +192,10 @@ public class IpcTesterStatusManagers : IIpcTesterGroup
                 _lastReturnCode = new ClearManagerByName(Svc.PluginInterface).Invoke(_playerName, _buddyName);
             CkGui.AttachToolTip("--COL--WARNING:--COL----NL--This will desync any actors that are ephemeral! (External plugins)", ImGuiColors.DalamudRed);
         }
+
+        IpcTesterUI.DrawIpcRowStart(ConvertLegacyData.Label, "Convert Legacy ActorSM");
+        if (CkGui.SmallIconTextButton(FAI.Sync, "Convert", disabled: !IsSubscribed || _managerBase64.Length is 0))
+            _convertedBase64 = new ConvertLegacyData(Svc.PluginInterface).Invoke(_managerBase64);
+        CkGui.AttachToolTip("Primarily for testing purposes!");
     }
 }

@@ -43,6 +43,13 @@ public class SettingsTab
         }
         DrawIndentedEnables();
 
+        var openOnStart = _config.Current.OpenOnStartup;
+        if (ImGui.Checkbox("Open on Startup", ref openOnStart))
+        {
+            _config.Current.OpenOnStartup = openOnStart;
+            _config.Save();
+        }
+
         CkGui.FontText("Limiters", Fonts.Default150Percent);
         var offInDuty = _config.Current.OffInDuty;
         if (ImGui.Checkbox("Disable in Duties/Instances", ref offInDuty))
@@ -127,75 +134,79 @@ public class SettingsTab
 
         if (oldDirExists)
         {
-            if (CkGui.IconTextButton(FAI.FileImport, "Import Statuses (From Moodles)", disabled: !shiftAndCtrlPressed))
+            if (CkGui.IconTextButton(FAI.FileImport, "Statuses (Moodles)", disabled: !shiftAndCtrlPressed))
             {
-                var statusFS = GetOldMigrationFilePath("MoodleFileSystem.json");
-                var statuses = GetOldMigrationFilePath("DefaultConfig.json");
-                if (File.Exists(statusFS) && File.Exists(statuses))
+                try
                 {
-                    _logger.LogInformation($"Migrating from {statusFS}");
-                    try
+                    var statusFS = GetOldMigrationFilePath("MoodleFileSystem.json");
+                    var statuses = GetOldMigrationFilePath("DefaultConfig.json");
+                    if (File.Exists(statusFS) && File.Exists(statuses))
                     {
+                        _logger.LogInformation($"Migrating from {statusFS}");
                         var defaultJson = JObject.Parse(File.ReadAllText(statuses));
                         _data.MoodleStatusMigration(defaultJson);
                         _statusFileSystem.MergeWithMigratableFile(statusFS);
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Failed to migrate statuses from {statuses}");
-                    }
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to migrate statuses");
+                }
+
             }
             CkGui.AttachToolTip("Migrate all statuses to Loci.--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
-
-            if (CkGui.IconTextButton(FAI.FileImport, "Import Presets (From Moodles)", disabled: !shiftAndCtrlPressed))
+            ImGui.SameLine();
+            if (CkGui.IconTextButton(FAI.FileImport, "Presets (Moodles)", disabled: !shiftAndCtrlPressed))
             {
-                var presetFS = GetOldMigrationFilePath("PresetFileSystem.json");
-                var presets = GetOldMigrationFilePath("DefaultConfig.json");
-                if (File.Exists(presetFS) && File.Exists(presets))
+                try
                 {
-                    _logger.LogInformation($"Migrating from {presetFS}");
-                    try
+                    var presetFS = GetOldMigrationFilePath("PresetFileSystem.json");
+                    var presets = GetOldMigrationFilePath("DefaultConfig.json");
+                    if (File.Exists(presetFS) && File.Exists(presets))
                     {
+                        _logger.LogInformation($"Migrating from {presetFS}");
                         var defaultJson = JObject.Parse(File.ReadAllText(presets));
                         _data.MoodlePresetMigration(defaultJson);
                         // Then update the FS.
                         _presetFileSystem.MergeWithMigratableFile(presetFS);
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Failed to migrate presets from {presets}");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to migrate presets");
                 }
             }
             CkGui.AttachToolTip("Migrate all presets to Loci.--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
-            ImGui.Separator();
         }
 
         if (sundDirExists)
         {
-            if (CkGui.IconTextButton(FAI.FileImport, "Migrate Statuses (From Sundouleia)", disabled: !shiftAndCtrlPressed))
+            if (oldDirExists)
+                ImGui.SameLine();
+
+            if (CkGui.IconTextButton(FAI.FileImport, "Statuses (Sundouleia)", disabled: !shiftAndCtrlPressed))
             {
-                var statusFS = Path.Combine(GetSundMigratableDirectoryPath(), "filesystem", "fs-statuses.json");
-                var statuses = Path.Combine(GetSundMigratableDirectoryPath(), "lociData.json");
-                if (File.Exists(statusFS) && File.Exists(statuses))
+                try
                 {
-                    _logger.LogInformation($"Migrating from {statusFS}");
-                    try
+                    var statusFS = Path.Combine(GetSundMigratableDirectoryPath(), "filesystem", "fs-statuses.json");
+                    var statuses = Path.Combine(GetSundMigratableDirectoryPath(), "lociData.json");
+                    if (File.Exists(statusFS) && File.Exists(statuses))
                     {
+                        _logger.LogInformation($"Migrating from {statusFS}");
                         var defaultJson = JObject.Parse(File.ReadAllText(statuses));
                         _data.SundStatusMigration(defaultJson);
                         _statusFileSystem.MergeWithMigratableFile(statusFS);
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Failed to migrate statuses from {statuses}");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to migrate statuses");
                 }
             }
             CkGui.AttachToolTip("Migrate all statuses to Sundouleia.--SEP----COL--Must hold CTRL+SHIFT to execute.--COL--", ImGuiColors.DalamudOrange);
 
-            if (CkGui.IconTextButton(FAI.FileImport, "Migrate Presets (From Sundouleia)", disabled: !shiftAndCtrlPressed))
+            ImGui.SameLine();
+            if (CkGui.IconTextButton(FAI.FileImport, "Presets (Sundouleia)", disabled: !shiftAndCtrlPressed))
             {
                 try
                 {

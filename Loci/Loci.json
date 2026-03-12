@@ -1,9 +1,10 @@
 {
 	"Author": "Cordelia, AndrielChaoti",
-    "Name": "Loci",
+	"Name": "Loci",
 	"Punchline": "Custom status effects for players and companions alike!",
-    "Description": "An inclusive and extensive custom status effect manager. Apply them to targets, group custom statuses with presets, or apply them under conditional events.",
+	"Description": "An inclusive and extensive custom status effect manager. Apply them to targets, group custom statuses with presets, or apply them under conditional events.",
 	"ApplicableVersion": "any",
-    "RepoUrl": "https://github.com/CordeliaMist/Loci",
+	"RepoUrl": "https://github.com/CordeliaMist/Loci",
 	"Tags": [ "Custom Status", "Effects", "Companion", "Vfx", "Customization", "Character", "Appearance" ],
+	"IconUrl": "https://raw.githubusercontent.com/Loci/repo/main/Assets/icon.png"
 }

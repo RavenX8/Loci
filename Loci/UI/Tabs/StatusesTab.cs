@@ -191,12 +191,16 @@ public class StatusesTab : IDisposable
                 CkGui.FramedHoverIconText(FAI.ExclamationTriangle, CkCol.FavoriteHovered.Uint(), CkCol.Favorite.Uint());
                 CkGui.AttachToolTip("You must select an icon!");
             }
-
+            else
+            {
+                CkGui.ColorTextFrameAlignedInline($"#{status.IconID}", ImGuiColors.DalamudGrey2);
+            }
+            
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
             var selinfo = Utils.GetIconData((uint)status.IconID);
             // Redo this in the way we want after we get it at least working.
-            if (ImGui.BeginCombo("##sel", $"Icon: #{status.IconID} {selinfo?.Name}", ImGuiComboFlags.HeightLargest))
+            if (ImGui.BeginCombo("##sel", $"{selinfo?.Name}", ImGuiComboFlags.HeightLargest))
             {
                 var cursor = ImGui.GetCursorPos();
                 ImGui.Dummy(new Vector2(100, ImGuiHelpers.MainViewport.Size.Y * .3f));
@@ -592,6 +596,7 @@ public class StatusesTab : IDisposable
 
     private void DrawVfxCombo(LociStatus status, float width)
     {
+        ImGui.SetNextItemWidth(width);
         using var combo = ImRaii.Combo("##vfx", $"VFX: {status.CustomFXPath}", ImGuiComboFlags.HeightLargest);
         if (combo)
         {
