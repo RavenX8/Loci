@@ -13,7 +13,7 @@ Includes:
 - Event-Monitored status and preset automation
 
 ```
-https://raw.githubusercontent.com/CordeliaMist/Loci/refs/heads/main/repo.json
+https://raw.githubusercontent.com/CordeliaMist/Loci/main/repo.json
 ```
 ## Contributions
 Plugin Icon designed by Yuzuki!
