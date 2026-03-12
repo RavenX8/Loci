@@ -1,4 +1,4 @@
-name: release.yml
+name: release
 on:
   push:
     branches:
@@ -13,6 +13,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
+          fetch-tags: 'true'
+      - name: Get Version
+        id: get_version
+        run: |
+          # Try to get version number from the CSProj file and load it for later steps.
+          $out = ([xml](Get-Content './Loci/Loci.csproj')).Project.PropertyGroup.Version
+          Write-Output "Parsed version `"$ver`" from Loci.csproj."
+          Write-Output "ver=$out".Trim() | Out-File -FilePath "$env:GITHUB_OUTPUT" -Encoding ascii
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
@@ -21,43 +29,32 @@ jobs:
         run: dotnet restore
       - name: Fetch Dalamud
         run: |
+          # Fetch current stable Dalamud assets.
           Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
-      - name: Get Version
-        id: get_version
-        run: |
-          $out = ([xml](Get-Content './Loci/Loci.csproj')).Project.PropertyGroup.Version
-          Write-Output "Version String is $out"
-          Write-Output "ver=$out".Trim() | Out-File -FilePath "$env:GITHUB_OUTPUT" -Encoding ascii
       - name: Build
         run: |
           dotnet build --no-restore --configuration Release --nologo
-      - name: Archive
-        run: Compress-Archive -path "Loci/bin/x64/Release/*" -DestinationPath "Loci.zip"
       - name: Check for Release
         id: check_release_needed
         env:
           VER_STRING: ${{ steps.get_version.outputs.ver }}
         run: |
-          $ver = $env:VER_STRING
-          $test = git tag -l | Select-String -Pattern "$ver"
+          # Check if version has updated to see if we need to package a new release.
+          $ver = $env:VER_STRING.Trim()
           $newtag = 0
-          if ($test -eq $null) {
-          git config --global user.name "Actions User"
-          git config --global user.email "actions@github.com"
-          git tag $ver
+          if (-not [bool](git tag -l $ver)) {
+          Write-Output "::notice::Tag `"ver`" was not found, creating a new release."
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a $ver -m "[CI] Tagging new version."
           git push --tags
           $newtag = 1
+          } else {
+          Write-Output "::notice::No new release required, skipping further steps"
           }
-          Write-Output "New tag needed: $newtag"
+          Write-Output "::debug::New tag needed: $newtag"
           Write-Output "newtag=$newtag" | Out-File -FilePath "$env:GITHUB_OUTPUT"
-          exit 1
-      - name: Upload Build Artifact
-        if: ${{ steps.check_release_needed.outputs.newtag == true }}
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          path: |
-            .Loci/bin/x64/Release/*
       - name: Create Release
         if: ${{ steps.check_release_needed.outputs.newtag == true }}
         id: create_release
@@ -66,7 +63,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.get_version.outputs.ver }}
-          release_name: Loci ${{ steps.get_version.outputs.ver }}
+          release_name: Loci v${{ steps.get_version.outputs.ver }}
           draft: 'false'
           prerelease: 'false'
       - name: Upload Release Asset
@@ -77,29 +74,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Loci.zip
-          asset_name: Loci.zip
+          asset_path: ./Loci/bin/x64/Release/Loci/latest.zip
+          asset_name: Loci_v${{ steps.get_version.outputs.ver }}.zip
           asset_content_type: application/zip
       - name: Update repo.json
         if: ${{ steps.check_release_needed.outputs.newtag == true }}
         run: |
+          # Get and update the current repo.json
           $ver = '${{ steps.get_version.outputs.ver }}'
           $path = './repo.json'
+          $downloadUri = '${{ steps.upload_release_asset.outputs.browser_download_url }}'
           $json = Get-Content -Raw $path | ConvertFrom-Json
           $json[0].AssemblyVersion = $ver
-          $json[0].DownloadLinkInstall = ${{ steps.upload_release_asset.outputs.browser_download_url }}
-          $json[0].DownloadLinkUpdate = ${{ steps.upload_release_asset.outputs.browser_download_url }}
-          $json[0].DownloadLinkTesting = ${{ steps.upload_release_asset.outputs.browser_download_url }}
+          $json[0].DownloadLinkInstall = $downloadUri
+          $json[0].DownloadLinkUpdate = $downloadUri
+          $json[0].DownloadLinkTesting = $downloadUri
           $content = $json | ConvertTo-Json -AsArray
           set-content -Path $path -Value $content
       - name: Commit repo.json
-        if: ${{ steps.check_release_needed.outputs.newtag }}
+        if: ${{ steps.check_release_needed.outputs.newtag == true }}
         run: |
-          git config --global user.name "Actions User"
-          git config --global user.email "actions@github.com"
-          git fetch origin main
-          git branch -f main ${{ github.sha }}
-          git checkout main
+          # Commit repo.json changes.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add repo.json
-          git commit -m "[CI] Updating repo.json for ${{ steps.get_version.outputs.ver }}\n\nskip-checks:true" || true
+          git commit -m "[CI] Updating repo.json for ${{ steps.get_version.outputs.ver }}`n`nskip-checks:true" || true
           git push origin main
