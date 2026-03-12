@@ -24,15 +24,17 @@ public unsafe class FocusTargetInfoProcessor
         _memory = memory;
 
         Svc.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "_FocusTargetInfo", OnFocusTargetInfoUpdate);
-        Svc.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "_FocusTargetInfo", OnFocusTargetInfoRequestedUpdate);
-        if(PlayerData.Available && AddonHelp.TryGetAddonByName<AtkUnitBase>("_FocusTargetInfo", out var addon) && AddonHelp.IsAddonReady(addon))
-                AddonRequestedUpdate(addon);
-        }
+        Svc.AddonLifecycle.RegisterListener(AddonEvent.PreRequestedUpdate, "_FocusTargetInfo", OnPreRequestedUpdate);
+        Svc.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "_FocusTargetInfo", OnPostRequestedUpdate);
+        if (PlayerData.Available && AddonHelp.TryGetAddonByName<AtkUnitBase>("_FocusTargetInfo", out var addon) && AddonHelp.IsAddonReady(addon))
+            PostRequestedUpdate(addon);
+    }
 
     public void Dispose()
     {
         Svc.AddonLifecycle.UnregisterListener(AddonEvent.PostUpdate, "_FocusTargetInfo", OnFocusTargetInfoUpdate);
-        Svc.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "_FocusTargetInfo", OnFocusTargetInfoRequestedUpdate);
+        Svc.AddonLifecycle.UnregisterListener(AddonEvent.PreRequestedUpdate, "_FocusTargetInfo", OnPreRequestedUpdate);
+        Svc.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "_FocusTargetInfo", OnPostRequestedUpdate);
     }
 
     public void HideAll()
@@ -41,18 +43,32 @@ public unsafe class FocusTargetInfoProcessor
             UpdateAddon(addon, true);
     }
 
-    // Func helper to get around 7.4's internal AddonArgs while removing ArtificialAddonArgs usage 
-    private void OnFocusTargetInfoRequestedUpdate(AddonEvent t, AddonArgs args)
-        => AddonRequestedUpdate((AtkUnitBase*)args.Addon.Address);
+    private unsafe void OnPreRequestedUpdate(AddonEvent t, AddonArgs args)
+        => PreAddonRequestedUpdate((AtkUnitBase*)args.Addon.Address);
+    private unsafe void OnPostRequestedUpdate(AddonEvent t, AddonArgs args)
+        => PostRequestedUpdate((AtkUnitBase*)args.Addon.Address);
 
-    private void OnFocusTargetInfoUpdate(AddonEvent type, AddonArgs args)
+    private unsafe void PreAddonRequestedUpdate(AtkUnitBase* addonBase)
     {
-        if(!PlayerData.Available) return;
-        if(_config.CanLociModifyUI())
-            UpdateAddon((AtkUnitBase*)args.Addon.Address);
+        // Get the target so we can handle the case of companions. For these guys, we want to set all statuses back to invisible.
+        var ts = TargetSystem.Instance();
+        var target = ts->SoftTarget is not null ? ts->SoftTarget : ts->Target;
+        if (target is null || !target->IsCharacter() || target->ObjectKind is not ObjectKind.Companion)
+            return;
+        // Clear visibility of all subnodes.
+        if (addonBase is not null && AddonHelp.IsAddonReady(addonBase))
+        {
+            for (var i = 8; i >= 4; i--)
+            {
+                var c = addonBase->UldManager.NodeList[i];
+                if (c->IsVisible())
+                    c->NodeFlags ^= NodeFlags.Visible;
+            }
+            _logger.LogTrace($"Hid all status icons for companion target: {Utils.ToLociName((Character*)target)}", LoggerType.Processors);
+        }
     }
 
-    private void AddonRequestedUpdate(AtkUnitBase* addonBase)
+    private void PostRequestedUpdate(AtkUnitBase* addonBase)
     {
         if (addonBase is not null && AddonHelp.IsAddonReady(addonBase))
         {
@@ -67,10 +83,17 @@ public unsafe class FocusTargetInfoProcessor
         _logger.LogTrace($"FocusTarget Requested update: {NumStatuses}", LoggerType.Processors);
     }
 
+    private void OnFocusTargetInfoUpdate(AddonEvent type, AddonArgs args)
+    {
+        if (!PlayerData.Available) return;
+        if (_config.CanLociModifyUI())
+            UpdateAddon((AtkUnitBase*)args.Addon.Address);
+    }
+
     public unsafe void UpdateAddon(AtkUnitBase* addon, bool hideAll = false)
     {
         var target = TargetSystem.Instance()->FocusTarget;
-        if (target is null || !target->IsCharacter() || target->ObjectKind is not ObjectKind.Pc)
+        if (target is null || !target->IsCharacter() || target->ObjectKind is not (ObjectKind.Pc or ObjectKind.Companion))
             return;
 
         if (addon is null || !AddonHelp.IsAddonReady(addon))
@@ -90,6 +113,14 @@ public unsafe class FocusTargetInfoProcessor
 
         // Update the displays.
         var sm = LociManager.GetFromChara((Character*)target);
+        // If a companion, force visibility
+        if (target->ObjectKind is ObjectKind.Companion)
+        {
+            var c = addon->UldManager.NodeList[3];
+            if (!c->IsVisible())
+                c->NodeFlags ^= NodeFlags.Visible;
+        }
+
         foreach (var x in sm.Statuses)
         {
             if (x.Type is StatusType.Special)

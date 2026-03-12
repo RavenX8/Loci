@@ -22,11 +22,8 @@ public unsafe class TargetInfoProcessor
         Svc.AddonLifecycle.RegisterListener(AddonEvent.PreUpdate, "_TargetInfo", OnTargetInfoUpdate);
         Svc.AddonLifecycle.RegisterListener(AddonEvent.PreRequestedUpdate, "_TargetInfo", OnPreRequestedUpdate);
         Svc.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "_TargetInfo", OnPostRequestedUpdate);
-        unsafe
-        {
-            if (PlayerData.Available && AddonHelp.TryGetAddonByName<AtkUnitBase>("_TargetInfo", out var addon) && AddonHelp.IsAddonReady(addon))
-                PostRequestedUpdate(addon);
-        }
+        if (PlayerData.Available && AddonHelp.TryGetAddonByName<AtkUnitBase>("_TargetInfo", out var addon) && AddonHelp.IsAddonReady(addon))
+            PostRequestedUpdate(addon);
     }
 
     public void Dispose()
@@ -107,7 +104,6 @@ public unsafe class TargetInfoProcessor
 
         // Get the base count by combining the statuses from Moodles with the vanilla ones.
         var baseCnt = 32 - NumStatuses;
-
         for(var i = baseCnt; i >= 3; i--)
         {
             var c = addon->UldManager.NodeList[i];
