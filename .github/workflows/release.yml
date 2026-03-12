@@ -37,19 +37,23 @@ jobs:
         run: Compress-Archive -path "Loci/bin/x64/Release/*" -DestinationPath "Loci.zip"
       - name: Check for Release
         id: check_release_needed
+        env:
+          VER_STRING: ${{ steps.get_version.outputs.var }}
         run: |
-          $test = git tag -l | Select-String -Pattern "${{ steps.get_version.outputs.ver }}
-          if ($test -ne $null) {
-          Write-Output "newtag=false" >> "$GITHUB_OUTPUT"
-          } else {
+          $test = git tag -l | Select-String -Pattern "$env:VER_STRING"
+          $newtag = $false
+          if ($test -eq $null) {
           git config --global user.name "Actions User"
           git config --global user.email "actions@github.com"
           git tag ${{ steps.get_version.outputs.ver }}
           git push --tags
-          Write-Output "newtag=true" >> "$GITHUB_OUTPUT"
+          $newtag = $true
           }
+          Write-Output "New tag needed: $newtag"
+          Write-Output "newtag=$newtag" | Out-File -FilePath "$env:GITHUB_OUTPUT"
+          exit 1
       - name: Upload Build Artifact
-        if: ${{ steps.check_release_needed.outputs.newtag }}
+        if: ${{ steps.check_release_needed.outputs.newtag -eq $true }}
         uses: actions/upload-artifact@v4.6.2
         with:
           path: |
