@@ -24,10 +24,12 @@ jobs:
         env:
           VER_STRING: ${{ steps.get_version.outputs.ver }}
         run: |
-          $ver = $env:VER_STRING
-          $test = git tag -l | Select-String -Pattern "$ver"
+          $ver = $env:VER_STRING.Trim()
+          Write-Output "VerStr=$ver."
+          $test = git tag -l | Select-String -Pattern "$ver" -SimpleMatch
           $newtag = 0
           if ($test -eq $null) {
+          Write-Output "Detected tag \"$ver\" doesn't exist, trying to create a tag."
           git config --global user.name "Actions User"
           git config --global user.email "actions@github.com"
           git tag $ver
