@@ -35,8 +35,6 @@ jobs:
       - name: Build
         run: |
           dotnet build --no-restore --configuration Release --nologo
-      - name: Archive
-        run: Compress-Archive -path "Loci/bin/x64/Release/*" -DestinationPath "Loci.zip"
       - name: Check for Release
         id: check_release_needed
         env:
@@ -57,12 +55,6 @@ jobs:
           }
           Write-Output "::debug::New tag needed: $newtag"
           Write-Output "newtag=$newtag" | Out-File -FilePath "$env:GITHUB_OUTPUT"
-      - name: Upload Build Artifact
-        if: ${{ steps.check_release_needed.outputs.newtag == true }}
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          path: |
-            .Loci/bin/x64/Release/*
       - name: Create Release
         if: ${{ steps.check_release_needed.outputs.newtag == true }}
         id: create_release
@@ -71,7 +63,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.get_version.outputs.ver }}
-          release_name: Loci ${{ steps.get_version.outputs.ver }}
+          release_name: Loci v${{ steps.get_version.outputs.ver }}
           draft: 'false'
           prerelease: 'false'
       - name: Upload Release Asset
@@ -82,8 +74,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Loci.zip
-          asset_name: Loci.zip
+          asset_path: ./Loci/bin/Release/Loci/latest.zip
+          asset_name: Loci_v${{ steps.get_version.outputs.ver }}.zip
           asset_content_type: application/zip
       - name: Update repo.json
         if: ${{ steps.check_release_needed.outputs.newtag == true }}
