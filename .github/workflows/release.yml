@@ -29,7 +29,7 @@ jobs:
       - name: Build
         run: |
           $ver = ${{ steps.get_version.outputs.ver }}
-          Invoke-Expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver;FileVersion=$ver;AssemblyVersion=$ver'
+          Invoke-Expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
       - name: Archive
         run: Compress-Archive -path "Loci/bin/Release/*" -DestinationPath "Loci.zip"
       - name: Check for Release
