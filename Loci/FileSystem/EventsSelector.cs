@@ -71,13 +71,15 @@ public sealed class EventsSelector : CkFileSystemSelector<LociEvent, EventsSelec
     private void RenameEvents(LociEventsFS.Leaf leaf)
     {
         ImGui.Separator();
+        var prevName = leaf.Value.Title;
         var currentName = leaf.Value.Title;
         if (ImGui.IsWindowAppearing())
             ImGui.SetKeyboardFocusHere(0);
         ImGui.TextUnformatted("Rename Event:");
         if (ImGui.InputText("##RenameEvent", ref currentName, 256, ImGuiInputTextFlags.EnterReturnsTrue))
         {
-            _data.RenameEvent(leaf.Value, currentName);
+            if (prevName != currentName)
+                _data.RenameEvent(leaf.Value, prevName);
             ImGui.CloseCurrentPopup();
         }
         CkGui.AttachToolTip("Enter a new event name..");

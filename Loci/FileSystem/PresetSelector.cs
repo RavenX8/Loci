@@ -68,22 +68,21 @@ public sealed class PresetSelector : CkFileSystemSelector<LociPreset, PresetSele
 
     private void RenamePreset(PresetsFS.Leaf leaf)
     {
-        using (ImRaii.Group())
+        ImGui.Separator();
+        var prevName = leaf.Value.Title;
+        var currentName = leaf.Value.Title;
+        if (ImGui.IsWindowAppearing())
+            ImGui.SetKeyboardFocusHere(0);
+        ImGui.TextUnformatted("Rename Preset:");
+        if (ImGui.InputText("##RenamePreset", ref currentName, 256, ImGuiInputTextFlags.EnterReturnsTrue))
         {
-            var currentName = leaf.Value.Title;
-            if (ImGui.IsWindowAppearing())
-                ImGui.SetKeyboardFocusHere(0);
-            ImGui.TextUnformatted("Rename Preset:");
-            if (ImGui.InputText("##RenamePreset", ref currentName, 256, ImGuiInputTextFlags.EnterReturnsTrue))
-            {
-                _data.RenamePreset(leaf.Value, currentName);
-                ImGui.CloseCurrentPopup();
-            }
-            CkGui.AttachToolTip("Enter a new preset name..");
-
-            CkRichText.Text(currentName, 6);
+            if (prevName != currentName)
+                _data.MarkPresetModified(leaf.Value);
+            ImGui.CloseCurrentPopup();
         }
-        ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(ImGuiCol.Border), 1);
+        CkGui.AttachToolTip("Enter a new preset name..");
+
+        CkRichText.Text(currentName, 6);
     }
 
     public override void Dispose()

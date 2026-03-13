@@ -250,11 +250,7 @@ public class StatusesTab : IDisposable
             if (ImGui.IsItemDeactivatedAfterEdit())
             {
                 if (_tmpTitle != status.Title)
-                {
-                    var prevTitle = status.Title;
-                    status.Title = _tmpTitle;
-                    _data.MarkStatusModified(status, prevTitle);
-                }
+                    _data.RenameStatus(status, _tmpTitle);
                 // null temp
                 _tmpTitle = null;
             }

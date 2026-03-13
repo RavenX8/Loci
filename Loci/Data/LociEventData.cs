@@ -73,20 +73,11 @@ public sealed class LociEventData : IHybridSavable
         _mediator.Publish(new LociEventChanged(FSChangeType.Renamed, lociEvent, prevName));
     }
 
-    public void RenamePreset(LociPreset preset, string newName)
-    {
-        var prevName = preset.Title;
-        _logger.LogDebug($"Renaming preset {prevName} to {newName}.", LoggerType.DataManagement);
-        preset.Title = newName;
-        _saver.Save(this);
-        _mediator.Publish(new LociPresetChanged(FSChangeType.Renamed, preset, prevName));
-    }
-
-    public void MarkEventModified(LociEvent lociEvent, string? prevName = null)
+    public void MarkEventModified(LociEvent lociEvent)
     {
         _logger.LogDebug($"Modified event {lociEvent.Title}.", LoggerType.DataManagement);
         _saver.Save(this);
-        _mediator.Publish(new LociEventChanged(FSChangeType.Modified, lociEvent, prevName is not null ? prevName : null));
+        _mediator.Publish(new LociEventChanged(FSChangeType.Modified, lociEvent, null));
     }
 
     public void DeleteEvent(LociEvent lociEvent)

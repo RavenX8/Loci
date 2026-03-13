@@ -83,19 +83,18 @@ public sealed class LociEventsFS : CkFileSystem<LociEvent>, IMediatorSubscriber,
                     // Check for type changes.
                     if (existingLeaf.Value.GetType() != item.GetType())
                         UpdateLeafValue(existingLeaf, item);
-                    // Detect potential renames.
-                    if (existingLeaf.Name != CkRichText.StripDisallowedRichTags(item.Title, 0))
-                        RenameWithDuplicates(existingLeaf, CkRichText.StripDisallowedRichTags(item.Title, 0));
                     return;
                 }
-            case FSChangeType.Renamed when oldName != null:
+            case FSChangeType.Renamed when oldName is not null:
                 {
                     if (!FindLeaf(item, out var leaf))
                         return;
 
                     var old = CkRichText.StripDisallowedRichTags(oldName, 0).FixName();
+                    var newName = CkRichText.StripDisallowedRichTags(item.Title, 0).FixName();
+                    // Only auto-rename if the leafs path name was the same as the old name. If it was custom, ignore it.
                     if (old == leaf.Name || leaf.Name.IsDuplicateName(out var baseName, out _) && baseName == old)
-                        RenameWithDuplicates(leaf, CkRichText.StripDisallowedRichTags(item.Title, 0));
+                        RenameWithDuplicates(leaf, newName);
                     return;
                 }
         }

@@ -177,11 +177,7 @@ public class LociEventsTab : IDisposable
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
             if (_tmpTitle != sel.Title)
-            {
-                var prevTitle = sel.Title;
-                sel.Title = _tmpTitle;
-                _data.MarkEventModified(sel, prevTitle);
-            }
+                _data.RenameEvent(sel, _tmpTitle);
             _tmpTitle = null;
         }
         

@@ -162,7 +162,7 @@ public class PresetsTab : IDisposable
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
             if (_tmpTitle != preset.Title)
-                _data.MarkPresetModified(preset, _tmpTitle);
+                _data.RenamePreset(preset, _tmpTitle);
             // null temp
             _tmpTitle = null;
         }

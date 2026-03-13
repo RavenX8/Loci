@@ -72,13 +72,15 @@ public sealed class StatusSelector : CkFileSystemSelector<LociStatus, StatusSele
     private void RenameStatus(StatusesFS.Leaf leaf)
     {
         ImGui.Separator();
+        var prevName = leaf.Value.Title;
         var currentName = leaf.Value.Title;
         if (ImGui.IsWindowAppearing())
             ImGui.SetKeyboardFocusHere(0);
         ImGui.TextUnformatted("Rename Status:");
         if (ImGui.InputText("##RenameStatus", ref currentName, 256, ImGuiInputTextFlags.EnterReturnsTrue))
         {
-            _data.RenameStatus(leaf.Value, currentName);
+            if (prevName != currentName)
+                _data.RenameStatus(leaf.Value, currentName);
             ImGui.CloseCurrentPopup();
         }
         CkGui.AttachToolTip("Enter a new status name..");

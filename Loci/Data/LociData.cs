@@ -122,19 +122,19 @@ public sealed class LociData : IHybridSavable
         _mediator.Publish(new LociPresetChanged(FSChangeType.Renamed, preset, prevName));
     }
 
-    public void MarkStatusModified(LociStatus status, string? prevName = null)
+    public void MarkStatusModified(LociStatus status)
     {
         _logger.LogDebug($"Modified status {status.Title}.", LoggerType.DataManagement);
         _saver.Save(this);
-        _mediator.Publish(new LociStatusChanged(FSChangeType.Modified, status, prevName is not null ? prevName : null));
+        _mediator.Publish(new LociStatusChanged(FSChangeType.Modified, status, null));
     }
 
-    public void MarkPresetModified(LociPreset preset, string? prevName = null)
+    public void MarkPresetModified(LociPreset preset)
     {
         // Ensure the title is still unique.
         _logger.LogDebug($"Modified preset {preset.Title}.", LoggerType.DataManagement);
         _saver.Save(this);
-        _mediator.Publish(new LociPresetChanged(FSChangeType.Modified, preset, prevName is not null ? prevName : null));
+        _mediator.Publish(new LociPresetChanged(FSChangeType.Modified, preset, null));
     }
 
     public void DeleteStatus(LociStatus status)
