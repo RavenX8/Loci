@@ -10,6 +10,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Loci.Combos;
 using Loci.Data;
 using Loci.DrawSystem;
@@ -324,8 +325,9 @@ public class PresetsTab : IDisposable
         if (!sm.Ephemeral)
         {
             // Perform without any validation
-            if (ImGui.Button("Apply to Target"))
+            if (CkGui.IconTextButton(FAI.Crosshairs, $"Apply to {chara->NameString}", disabled: chara->ObjectKind is not (ObjectKind.Pc or ObjectKind.Companion)))
                 sm.ApplyPreset(preset);
+            CkGui.AttachToolTip($"Applies the status to the target actor!--SEP----COL--Accepts Players and Minions--COL--", ImGuiColors.DalamudOrange);
         }
         else
         {

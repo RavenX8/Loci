@@ -51,8 +51,7 @@ public unsafe class FocusTargetInfoProcessor
     private unsafe void PreAddonRequestedUpdate(AtkUnitBase* addonBase)
     {
         // Get the target so we can handle the case of companions. For these guys, we want to set all statuses back to invisible.
-        var ts = TargetSystem.Instance();
-        var target = ts->SoftTarget is not null ? ts->SoftTarget : ts->Target;
+        var target = TargetSystem.Instance()->FocusTarget;
         if (target is null || !target->IsCharacter() || target->ObjectKind is not ObjectKind.Companion)
             return;
         // Clear visibility of all subnodes.

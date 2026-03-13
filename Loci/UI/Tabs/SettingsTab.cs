@@ -51,15 +51,19 @@ public class SettingsTab
         }
 
         CkGui.FontText("Limiters", Fonts.Default150Percent);
+        CkGui.FramedIconText(FAI.Ban);
+        CkGui.TextFrameAlignedInline("Disable in:");
+        ImGui.SameLine();
         var offInDuty = _config.Current.OffInDuty;
-        if (ImGui.Checkbox("Disable in Duties/Instances", ref offInDuty))
+        if (ImGui.Checkbox("Duties/Instances", ref offInDuty))
         {
             _config.Current.OffInDuty = offInDuty;
             _config.Save();
         }
 
+        ImGui.SameLine();
         var offInCombat = _config.Current.OffInCombat;
-        if (ImGui.Checkbox("Disable in Combat", ref offInCombat))
+        if (ImGui.Checkbox("Combat", ref offInCombat))
         {
             _config.Current.OffInCombat = offInCombat;
             _config.Save();
@@ -111,9 +115,9 @@ public class SettingsTab
             _config.Current.FlyText = flyTextOn;
             _config.Save();
         }
-
+        ImGui.SameLine();
         ImGui.SetNextItemWidth(150f);
-        if (ImGui.SliderInt("Fly/Popup Text Limit", ref flyTextLimit, 5, 20))
+        if (ImGui.SliderInt("Limit", ref flyTextLimit, 5, 20))
         {
             _config.Current.FlyTextLimit = flyTextLimit;
             _config.Save();
