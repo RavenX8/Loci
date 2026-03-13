@@ -164,7 +164,7 @@ public class LociProcessor : DisposableMediatorSubscriberBase, IHostedService
 
 
         // Iterate through them
-        foreach (var (ownerNameWorld, sm) in LociManager.Managers)
+        foreach (var (ownerNameWorld, sm) in LociManager.Managers.ToList())
         {
             var removed = new List<LociStatus>();
             var doChainApply = new List<LociStatus>();
